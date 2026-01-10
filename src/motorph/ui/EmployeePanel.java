@@ -273,7 +273,7 @@ public class EmployeePanel extends JPanel {
         firstNameField = new JTextField(18);
 
         birthdayField = createMaskedField("##/##/####"); // MM/dd/yyyy
-        phoneField = createMaskedField("####-###-####"); // 11 digits example
+        phoneField = createMaskedField("###-###-###"); // 11 digits example
 
         addressField = new JTextField(18);
 
@@ -289,7 +289,7 @@ public class EmployeePanel extends JPanel {
         row = addRow(form, gbc, row, required("First Name"), firstNameField);
         row = addRow(form, gbc, row, required("Birthday (MM/dd/yyyy)"), birthdayField);
 
-        row = addRow(form, gbc, row, "Phone Number (####-###-####)", phoneField);
+        row = addRow(form, gbc, row, "Phone Number (###-###-###)", phoneField);
         row = addRow(form, gbc, row, "Address", addressField);
 
         // Employment details (not required but important)
@@ -528,7 +528,7 @@ public class EmployeePanel extends JPanel {
         String phone = phoneField.getText().trim();
         if (!phone.isEmpty() && phone.contains("_")) {
             JOptionPane.showMessageDialog(this,
-                    "Phone number format is incomplete. Use ####-###-####.",
+                    "Phone number format is incomplete. Use ###-###-###.",
                     "Validation Error",
                     JOptionPane.ERROR_MESSAGE);
             return;
