@@ -12,9 +12,13 @@ public class MainFrame extends JFrame {
 
     public MainFrame() {
         setTitle("MotorPH Employee Payroll System");
-        setSize(1000, 600);
+
+        // Open the app maximized
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
+
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
+
 
         rootLayout = new CardLayout();
         rootPanel = new JPanel(rootLayout);

@@ -5,7 +5,7 @@ import java.awt.*;
 
 public class MainContentPanel extends JPanel {
 
-    private CardLayout cardLayout;
+    private final CardLayout cardLayout;
 
     public MainContentPanel(MainFrame mainFrame) {
         cardLayout = new CardLayout();
@@ -13,7 +13,7 @@ public class MainContentPanel extends JPanel {
 
         add(new DashboardPanel(), "DASHBOARD");
         add(new EmployeePanel(mainFrame), "EMPLOYEE");
-        add(new PayrollPanel(), "PAYROLL"); // payroll will be upgraded later
+        add(new PayrollPanel(mainFrame), "PAYROLL");
     }
 
     public void showPanel(String name) {

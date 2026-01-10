@@ -4,10 +4,12 @@ import motorph.model.Employee;
 import motorph.util.CSVUtil;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
+import javax.swing.text.MaskFormatter;
 import java.awt.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -20,19 +22,26 @@ public class EmployeePanel extends JPanel {
     private final CardLayout viewLayout = new CardLayout();
     private final JPanel viewPanel = new JPanel(viewLayout);
 
-    // List view components
+    // Data
+    private List<Employee> employees;
+
+    // List view
     private DefaultTableModel tableModel;
     private JTable employeeTable;
     private TableRowSorter<DefaultTableModel> sorter;
     private JTextField searchField;
 
-    private List<Employee> employees;
+    private JButton addBtn, viewBtn, editBtn, deleteBtn;
 
-    // Form view components
-    private JTextField empNoField, lastNameField, firstNameField, birthdayField, addressField, phoneField;
+    // Form view (tabs)
+    private JTextField empNoField, lastNameField, firstNameField, addressField;
+    private JFormattedTextField birthdayField, phoneField;
+
     private JTextField sssField, philhealthField, tinField, pagibigField;
+
     private JComboBox<String> statusCombo;
     private JTextField positionField, supervisorField;
+
     private JTextField basicSalaryField, riceField, phoneAllowField, clothingAllowField, grossSemiField, hourlyField;
 
     private JButton saveBtn, cancelBtn;
@@ -55,67 +64,81 @@ public class EmployeePanel extends JPanel {
         showListView();
     }
 
-    // ------------------- LIST VIEW -------------------
+    // ===================== LIST VIEW =====================
     private JPanel buildListView() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
+        panel.setBorder(new EmptyBorder(14, 14, 14, 14));
 
-        // ======== TOP AREA (2 ROWS) ========
-        JPanel topArea = new JPanel();
-        topArea.setLayout(new BoxLayout(topArea, BoxLayout.Y_AXIS));
-
-        // Row 1: Title (left) + Back button (right)
-        JPanel row1 = new JPanel(new BorderLayout());
+        // Header
+        JPanel headerRow = new JPanel(new BorderLayout());
         JLabel titleLabel = new JLabel("Employee Management System");
         titleLabel.setFont(new Font("Arial", Font.BOLD, 18));
+
+        JLabel subtitleLabel = new JLabel("Manage employee records (CSV-based storage)");
+        subtitleLabel.setFont(new Font("Arial", Font.PLAIN, 12));
+        subtitleLabel.setForeground(Color.DARK_GRAY);
+
+        JPanel titleBox = new JPanel();
+        titleBox.setOpaque(false);
+        titleBox.setLayout(new BoxLayout(titleBox, BoxLayout.Y_AXIS));
+        titleBox.add(titleLabel);
+        titleBox.add(Box.createVerticalStrut(3));
+        titleBox.add(subtitleLabel);
 
         JButton backBtn = new JButton("Back to Main Menu");
         backBtn.addActionListener(e -> mainFrame.showContent("DASHBOARD"));
 
-        row1.add(titleLabel, BorderLayout.WEST);
-        row1.add(backBtn, BorderLayout.EAST);
+        headerRow.add(titleBox, BorderLayout.WEST);
+        headerRow.add(backBtn, BorderLayout.EAST);
 
-        // Row 2: Action buttons (left) + Search (right)
-        JPanel row2 = new JPanel(new BorderLayout(10, 10));
+        // Toolbar
+        JPanel toolbar = new JPanel(new BorderLayout(10, 10));
+        toolbar.setBorder(new EmptyBorder(10, 0, 0, 0));
 
-        JPanel actionButtons = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        JButton addBtn = new JButton("Add New Employee");
-        JButton viewBtn = new JButton("View Details");
-        JButton editBtn = new JButton("Edit Employee");
-        JButton deleteBtn = new JButton("Delete Employee");
+        JPanel buttonRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
 
-        actionButtons.add(addBtn);
-        actionButtons.add(viewBtn);
-        actionButtons.add(editBtn);
-        actionButtons.add(deleteBtn);
+        addBtn = new JButton("Add New");
+        viewBtn = new JButton("View");
+        editBtn = new JButton("Edit");
+        deleteBtn = new JButton("Delete");
+
+        Dimension btnSize = new Dimension(110, 34);
+        setButtonSize(addBtn, btnSize);
+        setButtonSize(viewBtn, btnSize);
+        setButtonSize(editBtn, btnSize);
+        setButtonSize(deleteBtn, btnSize);
+
+        buttonRow.add(addBtn);
+        buttonRow.add(viewBtn);
+        buttonRow.add(editBtn);
+        buttonRow.add(deleteBtn);
 
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
-        searchPanel.add(new JLabel("Search: "));
-        searchField = new JTextField(22);
+        searchPanel.add(new JLabel("Search:"));
+        searchField = new JTextField(24);
         searchPanel.add(searchField);
 
-        row2.add(actionButtons, BorderLayout.WEST);
-        row2.add(searchPanel, BorderLayout.EAST);
+        toolbar.add(buttonRow, BorderLayout.WEST);
+        toolbar.add(searchPanel, BorderLayout.EAST);
 
-        topArea.add(row1);
-        topArea.add(Box.createVerticalStrut(8));
-        topArea.add(row2);
+        JPanel topContainer = new JPanel();
+        topContainer.setLayout(new BoxLayout(topContainer, BoxLayout.Y_AXIS));
+        topContainer.add(headerRow);
+        topContainer.add(toolbar);
 
-        panel.add(topArea, BorderLayout.NORTH);
+        panel.add(topContainer, BorderLayout.NORTH);
 
-        // ======== TABLE ========
+        // Table
         tableModel = new DefaultTableModel(
                 new Object[]{"Employee #", "Name", "Department/Position", "Status"},
                 0
         ) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
+            @Override public boolean isCellEditable(int row, int column) { return false; }
         };
 
         employeeTable = new JTable(tableModel);
         employeeTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        employeeTable.setRowHeight(24);
 
         sorter = new TableRowSorter<>(tableModel);
         employeeTable.setRowSorter(sorter);
@@ -123,20 +146,40 @@ public class EmployeePanel extends JPanel {
         refreshTable();
         panel.add(new JScrollPane(employeeTable), BorderLayout.CENTER);
 
-        // Search behavior
+        // Search filter
         searchField.getDocument().addDocumentListener(new DocumentListener() {
             @Override public void insertUpdate(DocumentEvent e) { applySearch(); }
             @Override public void removeUpdate(DocumentEvent e) { applySearch(); }
             @Override public void changedUpdate(DocumentEvent e) { applySearch(); }
         });
 
-        // Button actions
+        // Enable/disable buttons based on selection
+        setActionButtonsEnabled(false);
+        employeeTable.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                setActionButtonsEnabled(employeeTable.getSelectedRow() != -1);
+            }
+        });
+
+        // Actions
         addBtn.addActionListener(e -> startAdd());
         viewBtn.addActionListener(e -> startView());
         editBtn.addActionListener(e -> startEdit());
         deleteBtn.addActionListener(e -> deleteEmployee());
 
         return panel;
+    }
+
+    private void setButtonSize(JButton btn, Dimension size) {
+        btn.setPreferredSize(size);
+        btn.setMinimumSize(size);
+        btn.setMaximumSize(size);
+    }
+
+    private void setActionButtonsEnabled(boolean enabled) {
+        viewBtn.setEnabled(enabled);
+        editBtn.setEnabled(enabled);
+        deleteBtn.setEnabled(enabled);
     }
 
     private void applySearch() {
@@ -158,6 +201,7 @@ public class EmployeePanel extends JPanel {
                     e.getStatus()
             });
         }
+        setActionButtonsEnabled(false);
     }
 
     private Employee getSelectedEmployeeFromTable() {
@@ -173,114 +217,207 @@ public class EmployeePanel extends JPanel {
         return null;
     }
 
-    // ------------------- FORM VIEW -------------------
+    // ===================== FORM VIEW (TABBED) =====================
     private JPanel buildFormView() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
+        panel.setBorder(new EmptyBorder(14, 14, 14, 14));
 
+        // Top bar (title + back)
+        JPanel top = new JPanel(new BorderLayout());
         formTitle = new JLabel("Employee Details");
         formTitle.setFont(new Font("Arial", Font.BOLD, 18));
-        panel.add(formTitle, BorderLayout.NORTH);
 
-        JPanel form = new JPanel(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(4, 6, 4, 6);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.weightx = 1.0;
+        JButton backToListBtn = new JButton("Back to List");
+        backToListBtn.addActionListener(e -> showListView());
 
-        int row = 0;
+        top.add(formTitle, BorderLayout.WEST);
+        top.add(backToListBtn, BorderLayout.EAST);
+        panel.add(top, BorderLayout.NORTH);
 
-        // Basic info
-        empNoField = new JTextField(15); empNoField.setEditable(false);
-        lastNameField = new JTextField(15);
-        firstNameField = new JTextField(15);
-        birthdayField = new JTextField(15);
-        addressField = new JTextField(15);
-        phoneField = new JTextField(15);
+        // Tabs
+        JTabbedPane tabs = new JTabbedPane();
+        tabs.addTab("Basic", buildBasicTab());
+        tabs.addTab("Gov IDs", buildGovTab());
+        tabs.addTab("Compensation", buildCompTab());
 
-        row = addSection(form, gbc, row, "Basic Information");
-        row = addRow(form, gbc, row, "Employee #", empNoField);
-        row = addRow(form, gbc, row, "Last Name", lastNameField);
-        row = addRow(form, gbc, row, "First Name", firstNameField);
-        row = addRow(form, gbc, row, "Birthday (MM/dd/yyyy)", birthdayField);
-        row = addRow(form, gbc, row, "Address", addressField);
-        row = addRow(form, gbc, row, "Phone Number", phoneField);
-
-        // Government IDs
-        sssField = new JTextField(15);
-        philhealthField = new JTextField(15);
-        tinField = new JTextField(15);
-        pagibigField = new JTextField(15);
-
-        row = addSection(form, gbc, row, "Government IDs");
-        row = addRow(form, gbc, row, "SSS #", sssField);
-        row = addRow(form, gbc, row, "PhilHealth #", philhealthField);
-        row = addRow(form, gbc, row, "TIN #", tinField);
-        row = addRow(form, gbc, row, "Pag-IBIG #", pagibigField);
-
-        // Status / Position / Supervisor
-        statusCombo = new JComboBox<>(new String[]{"Regular", "Probationary"});
-        positionField = new JTextField(15);
-        supervisorField = new JTextField(15);
-
-        row = addSection(form, gbc, row, "Employment Details");
-        row = addRow(form, gbc, row, "Status", statusCombo);
-        row = addRow(form, gbc, row, "Position", positionField);
-        row = addRow(form, gbc, row, "Immediate Supervisor", supervisorField);
-
-        // Compensation
-        basicSalaryField = new JTextField(15);
-        riceField = new JTextField(15);
-        phoneAllowField = new JTextField(15);
-        clothingAllowField = new JTextField(15);
-        grossSemiField = new JTextField(15);
-        hourlyField = new JTextField(15);
-
-        row = addSection(form, gbc, row, "Compensation");
-        row = addRow(form, gbc, row, "Basic Salary", basicSalaryField);
-        row = addRow(form, gbc, row, "Rice Subsidy", riceField);
-        row = addRow(form, gbc, row, "Phone Allowance", phoneAllowField);
-        row = addRow(form, gbc, row, "Clothing Allowance", clothingAllowField);
-        row = addRow(form, gbc, row, "Gross Semi-monthly Rate", grossSemiField);
-        row = addRow(form, gbc, row, "Hourly Rate", hourlyField);
-
-        panel.add(new JScrollPane(form), BorderLayout.CENTER);
+        panel.add(tabs, BorderLayout.CENTER);
 
         // Bottom buttons
-        JPanel bottom = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JPanel bottom = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         saveBtn = new JButton("Save");
         cancelBtn = new JButton("Cancel");
-        bottom.add(saveBtn);
-        bottom.add(cancelBtn);
+
+        Dimension btnSize = new Dimension(110, 34);
+        setButtonSize(saveBtn, btnSize);
+        setButtonSize(cancelBtn, btnSize);
 
         saveBtn.addActionListener(e -> saveEmployee());
         cancelBtn.addActionListener(e -> showListView());
+
+        bottom.add(saveBtn);
+        bottom.add(cancelBtn);
 
         panel.add(bottom, BorderLayout.SOUTH);
 
         return panel;
     }
 
-    private int addSection(JPanel form, GridBagConstraints gbc, int row, String title) {
+    private JPanel buildBasicTab() {
+        JPanel form = new JPanel(new GridBagLayout());
+        form.setBorder(new EmptyBorder(10, 10, 10, 10));
+        GridBagConstraints gbc = baseGbc();
+
+        // Fields
+        empNoField = new JTextField(18); empNoField.setEditable(false);
+        lastNameField = new JTextField(18);
+        firstNameField = new JTextField(18);
+
+        birthdayField = createMaskedField("##/##/####"); // MM/dd/yyyy
+        phoneField = createMaskedField("####-###-####"); // 11 digits example
+
+        addressField = new JTextField(18);
+
+        statusCombo = new JComboBox<>(new String[]{"Regular", "Probationary"});
+        positionField = new JTextField(18);
+        supervisorField = new JTextField(18);
+
+        int row = 0;
+
+        // Required markers: Employee #*, Last Name*, First Name*, Birthday*
+        row = addRow(form, gbc, row, required("Employee #"), empNoField);
+        row = addRow(form, gbc, row, required("Last Name"), lastNameField);
+        row = addRow(form, gbc, row, required("First Name"), firstNameField);
+        row = addRow(form, gbc, row, required("Birthday (MM/dd/yyyy)"), birthdayField);
+
+        row = addRow(form, gbc, row, "Phone Number (####-###-####)", phoneField);
+        row = addRow(form, gbc, row, "Address", addressField);
+
+        // Employment details (not required but important)
+        row = addSeparator(form, gbc, row, "Employment Details");
+        row = addRow(form, gbc, row, "Status", statusCombo);
+        row = addRow(form, gbc, row, "Position", positionField);
+        row = addRow(form, gbc, row, "Immediate Supervisor", supervisorField);
+
+        row = addHint(form, gbc, row,
+                "Fields marked with * are required. Birthday uses MM/dd/yyyy format.");
+
+        return wrapScrollable(form);
+    }
+
+    private JPanel buildGovTab() {
+        JPanel form = new JPanel(new GridBagLayout());
+        form.setBorder(new EmptyBorder(10, 10, 10, 10));
+        GridBagConstraints gbc = baseGbc();
+
+        sssField = new JTextField(18);
+        philhealthField = new JTextField(18);
+        tinField = new JTextField(18);
+        pagibigField = new JTextField(18);
+
+        int row = 0;
+        row = addRow(form, gbc, row, "SSS #", sssField);
+        row = addRow(form, gbc, row, "PhilHealth #", philhealthField);
+        row = addRow(form, gbc, row, "TIN #", tinField);
+        row = addRow(form, gbc, row, "Pag-IBIG #", pagibigField);
+
+        row = addHint(form, gbc, row,
+                "Tip: You can store IDs as numbers or formatted strings. They will be saved to CSV.");
+
+        return wrapScrollable(form);
+    }
+
+    private JPanel buildCompTab() {
+        JPanel form = new JPanel(new GridBagLayout());
+        form.setBorder(new EmptyBorder(10, 10, 10, 10));
+        GridBagConstraints gbc = baseGbc();
+
+        basicSalaryField = new JTextField(18);
+        riceField = new JTextField(18);
+        phoneAllowField = new JTextField(18);
+        clothingAllowField = new JTextField(18);
+        grossSemiField = new JTextField(18);
+        hourlyField = new JTextField(18);
+
+        int row = 0;
+        row = addRow(form, gbc, row, "Basic Salary (Monthly)", basicSalaryField);
+        row = addRow(form, gbc, row, "Rice Subsidy", riceField);
+        row = addRow(form, gbc, row, "Phone Allowance", phoneAllowField);
+        row = addRow(form, gbc, row, "Clothing Allowance", clothingAllowField);
+        row = addRow(form, gbc, row, "Gross Semi-monthly Rate", grossSemiField);
+        row = addRow(form, gbc, row, "Hourly Rate", hourlyField);
+
+        row = addHint(form, gbc, row,
+                "Enter numeric values only (e.g., 25000 or 25000.50). Negative values are not allowed.");
+
+        return wrapScrollable(form);
+    }
+
+    private GridBagConstraints baseGbc() {
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(6, 8, 6, 8);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+        return gbc;
+    }
+
+    private String required(String label) {
+        return label + " *";
+    }
+
+    private int addSeparator(JPanel form, GridBagConstraints gbc, int row, String title) {
         gbc.gridx = 0; gbc.gridy = row; gbc.gridwidth = 2;
         JLabel label = new JLabel(title);
-        label.setFont(new Font("Arial", Font.BOLD, 14));
+        label.setFont(new Font("Arial", Font.BOLD, 13));
+        label.setForeground(Color.DARK_GRAY);
         form.add(label, gbc);
         gbc.gridwidth = 1;
         return row + 1;
     }
 
     private int addRow(JPanel form, GridBagConstraints gbc, int row, String labelText, JComponent field) {
-        gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0.3;
-        form.add(new JLabel(labelText), gbc);
+        gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0.35;
+        JLabel label = new JLabel(labelText);
+        form.add(label, gbc);
 
-        gbc.gridx = 1; gbc.weightx = 0.7;
+        gbc.gridx = 1; gbc.weightx = 0.65;
         form.add(field, gbc);
+
         return row + 1;
     }
 
-    // ------------------- ACTIONS -------------------
+    private int addHint(JPanel form, GridBagConstraints gbc, int row, String hint) {
+        gbc.gridx = 0; gbc.gridy = row; gbc.gridwidth = 2;
+        JLabel label = new JLabel("<html><span style='font-size:10px;color:#555;'>" + hint + "</span></html>");
+        form.add(label, gbc);
+        gbc.gridwidth = 1;
+        return row + 1;
+    }
+
+    private JPanel wrapScrollable(JPanel inner) {
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setOpaque(false);
+        JScrollPane sp = new JScrollPane(inner);
+        sp.setBorder(BorderFactory.createEmptyBorder());
+        wrapper.add(sp, BorderLayout.CENTER);
+        return wrapper;
+    }
+
+    private JFormattedTextField createMaskedField(String mask) {
+        try {
+            MaskFormatter formatter = new MaskFormatter(mask);
+            formatter.setPlaceholderCharacter('_');
+            JFormattedTextField field = new JFormattedTextField(formatter);
+            field.setColumns(18);
+            return field;
+        } catch (ParseException e) {
+            // fallback if formatter fails
+            return new JFormattedTextField();
+        }
+    }
+
+    // ===================== VIEW SWITCH =====================
     private void showListView() {
+        employees = CSVUtil.loadEmployees();
         refreshTable();
         viewLayout.show(viewPanel, "LIST");
         clearForm();
@@ -291,6 +428,7 @@ public class EmployeePanel extends JPanel {
         viewLayout.show(viewPanel, "FORM");
     }
 
+    // ===================== CRUD ACTIONS =====================
     private void startAdd() {
         mode = Mode.ADD;
         formTitle.setText("Add New Employee");
@@ -364,15 +502,15 @@ public class EmployeePanel extends JPanel {
     }
 
     private void saveEmployee() {
-        // Validate required fields
         String empNo = empNoField.getText().trim();
         String lastName = lastNameField.getText().trim();
         String firstName = firstNameField.getText().trim();
         String birthday = birthdayField.getText().trim();
 
-        if (empNo.isEmpty() || lastName.isEmpty() || firstName.isEmpty() || birthday.isEmpty()) {
+        // Required validations (*)
+        if (empNo.isEmpty() || lastName.isEmpty() || firstName.isEmpty() || birthday.isEmpty() || birthday.contains("_")) {
             JOptionPane.showMessageDialog(this,
-                    "Employee #, Last Name, First Name, and Birthday are required.",
+                    "Please complete all required fields marked with *.",
                     "Validation Error",
                     JOptionPane.ERROR_MESSAGE);
             return;
@@ -381,6 +519,16 @@ public class EmployeePanel extends JPanel {
         if (!isValidDate(birthday)) {
             JOptionPane.showMessageDialog(this,
                     "Birthday must be in MM/dd/yyyy format (example: 01/25/2002).",
+                    "Validation Error",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // Phone: if user typed something, ensure it is complete (no underscores)
+        String phone = phoneField.getText().trim();
+        if (!phone.isEmpty() && phone.contains("_")) {
+            JOptionPane.showMessageDialog(this,
+                    "Phone number format is incomplete. Use ####-###-####.",
                     "Validation Error",
                     JOptionPane.ERROR_MESSAGE);
             return;
@@ -414,7 +562,7 @@ public class EmployeePanel extends JPanel {
         e.setFirstName(firstNameField.getText().trim());
         e.setBirthday(birthdayField.getText().trim());
         e.setAddress(addressField.getText().trim());
-        e.setPhoneNumber(phoneField.getText().trim());
+        e.setPhoneNumber(phoneField.getText().trim().replace("_", "").trim());
 
         e.setSssNumber(sssField.getText().trim());
         e.setPhilHealthNumber(philhealthField.getText().trim());
@@ -459,28 +607,28 @@ public class EmployeePanel extends JPanel {
     }
 
     private void clearForm() {
-        empNoField.setText("");
-        lastNameField.setText("");
-        firstNameField.setText("");
-        birthdayField.setText("");
-        addressField.setText("");
-        phoneField.setText("");
+        if (empNoField != null) empNoField.setText("");
+        if (lastNameField != null) lastNameField.setText("");
+        if (firstNameField != null) firstNameField.setText("");
+        if (birthdayField != null) birthdayField.setText("");
+        if (addressField != null) addressField.setText("");
+        if (phoneField != null) phoneField.setText("");
 
-        sssField.setText("");
-        philhealthField.setText("");
-        tinField.setText("");
-        pagibigField.setText("");
+        if (sssField != null) sssField.setText("");
+        if (philhealthField != null) philhealthField.setText("");
+        if (tinField != null) tinField.setText("");
+        if (pagibigField != null) pagibigField.setText("");
 
-        statusCombo.setSelectedItem("Regular");
-        positionField.setText("");
-        supervisorField.setText("");
+        if (statusCombo != null) statusCombo.setSelectedItem("Regular");
+        if (positionField != null) positionField.setText("");
+        if (supervisorField != null) supervisorField.setText("");
 
-        basicSalaryField.setText("0");
-        riceField.setText("0");
-        phoneAllowField.setText("0");
-        clothingAllowField.setText("0");
-        grossSemiField.setText("0");
-        hourlyField.setText("0");
+        if (basicSalaryField != null) basicSalaryField.setText("0");
+        if (riceField != null) riceField.setText("0");
+        if (phoneAllowField != null) phoneAllowField.setText("0");
+        if (clothingAllowField != null) clothingAllowField.setText("0");
+        if (grossSemiField != null) grossSemiField.setText("0");
+        if (hourlyField != null) hourlyField.setText("0");
     }
 
     private void setFormEditable(boolean editable) {
