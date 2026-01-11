@@ -22,6 +22,13 @@ public class EmployeePanel extends JPanel {
     private final CardLayout viewLayout = new CardLayout();
     private final JPanel viewPanel = new JPanel(viewLayout);
 
+    // THEME (light)
+    private static final Color BG = new Color(245, 247, 252);
+    private static final Color CARD_BG = Color.WHITE;
+    private static final Color BORDER = new Color(225, 230, 240);
+    private static final Color TEXT = new Color(35, 45, 65);
+    private static final Color MUTED = new Color(110, 120, 145);
+
     // Data
     private List<Employee> employees;
 
@@ -53,7 +60,12 @@ public class EmployeePanel extends JPanel {
 
     public EmployeePanel(MainFrame mainFrame) {
         this.mainFrame = mainFrame;
+
         setLayout(new BorderLayout());
+        setBackground(BG);
+
+        viewPanel.setOpaque(true);
+        viewPanel.setBackground(BG);
 
         employees = CSVUtil.loadEmployees();
 
@@ -66,17 +78,21 @@ public class EmployeePanel extends JPanel {
 
     // ===================== LIST VIEW =====================
     private JPanel buildListView() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(new EmptyBorder(14, 14, 14, 14));
+        JPanel root = new JPanel(new BorderLayout(14, 14));
+        root.setBackground(BG);
+        root.setBorder(new EmptyBorder(18, 18, 18, 18));
 
-        // Header
-        JPanel headerRow = new JPanel(new BorderLayout());
-        JLabel titleLabel = new JLabel("Employee Management System");
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 22));
+        // Header (not a card)
+        JPanel headerRow = new JPanel(new BorderLayout(12, 12));
+        headerRow.setOpaque(false);
+
+        JLabel titleLabel = new JLabel("Employees");
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
+        titleLabel.setForeground(TEXT);
 
         JLabel subtitleLabel = new JLabel("Manage employee records (CSV-based storage)");
-        subtitleLabel.setFont(new Font("Arial", Font.PLAIN, 12));
-        subtitleLabel.setForeground(Color.DARK_GRAY);
+        subtitleLabel.setFont(new Font("Arial", Font.PLAIN, 13));
+        subtitleLabel.setForeground(MUTED);
 
         JPanel titleBox = new JPanel();
         titleBox.setOpaque(false);
@@ -85,17 +101,28 @@ public class EmployeePanel extends JPanel {
         titleBox.add(Box.createVerticalStrut(3));
         titleBox.add(subtitleLabel);
 
-        JButton backBtn = new JButton("Back to Main Menu");
+        JButton backBtn = new JButton("Back to Dashboard");
+        backBtn.setFocusPainted(false);
         backBtn.addActionListener(e -> mainFrame.showContent("DASHBOARD"));
 
         headerRow.add(titleBox, BorderLayout.WEST);
         headerRow.add(backBtn, BorderLayout.EAST);
 
-        // Toolbar
-        JPanel toolbar = new JPanel(new BorderLayout(10, 10));
-        toolbar.setBorder(new EmptyBorder(10, 0, 0, 0));
+        root.add(headerRow, BorderLayout.NORTH);
+
+        // Main card (toolbar + table)
+        JPanel card = createCard(new BorderLayout(12, 12));
+        card.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(BORDER),
+                new EmptyBorder(14, 14, 14, 14)
+        ));
+
+        // Toolbar row inside card
+        JPanel toolbar = new JPanel(new BorderLayout(12, 12));
+        toolbar.setOpaque(false);
 
         JPanel buttonRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        buttonRow.setOpaque(false);
 
         addBtn = new JButton("Add New");
         viewBtn = new JButton("View");
@@ -103,30 +130,30 @@ public class EmployeePanel extends JPanel {
         deleteBtn = new JButton("Delete");
 
         Dimension btnSize = new Dimension(110, 34);
-        setButtonSize(addBtn, btnSize);
-        setButtonSize(viewBtn, btnSize);
-        setButtonSize(editBtn, btnSize);
-        setButtonSize(deleteBtn, btnSize);
+        styleButton(addBtn, btnSize);
+        styleButton(viewBtn, btnSize);
+        styleButton(editBtn, btnSize);
+        styleDangerButton(deleteBtn, btnSize);
 
         buttonRow.add(addBtn);
         buttonRow.add(viewBtn);
         buttonRow.add(editBtn);
         buttonRow.add(deleteBtn);
 
-        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
-        searchPanel.add(new JLabel("Search:"));
-        searchField = new JTextField(24);
-        searchPanel.add(searchField);
+        JPanel searchPanel = new JPanel(new BorderLayout(8, 0));
+        searchPanel.setOpaque(false);
+
+        JLabel searchLabel = new JLabel("Search:");
+        searchLabel.setForeground(MUTED);
+
+        searchField = new JTextField(22);
+        searchField.setPreferredSize(new Dimension(240, 34));
+
+        searchPanel.add(searchLabel, BorderLayout.WEST);
+        searchPanel.add(searchField, BorderLayout.CENTER);
 
         toolbar.add(buttonRow, BorderLayout.WEST);
         toolbar.add(searchPanel, BorderLayout.EAST);
-
-        JPanel topContainer = new JPanel();
-        topContainer.setLayout(new BoxLayout(topContainer, BoxLayout.Y_AXIS));
-        topContainer.add(headerRow);
-        topContainer.add(toolbar);
-
-        panel.add(topContainer, BorderLayout.NORTH);
 
         // Table
         tableModel = new DefaultTableModel(
@@ -138,13 +165,21 @@ public class EmployeePanel extends JPanel {
 
         employeeTable = new JTable(tableModel);
         employeeTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        employeeTable.setRowHeight(24);
+        employeeTable.setRowHeight(26);
 
         sorter = new TableRowSorter<>(tableModel);
         employeeTable.setRowSorter(sorter);
 
         refreshTable();
-        panel.add(new JScrollPane(employeeTable), BorderLayout.CENTER);
+
+        JScrollPane sp = new JScrollPane(employeeTable);
+        sp.setBorder(BorderFactory.createLineBorder(BORDER));
+
+        // Add to card
+        card.add(toolbar, BorderLayout.NORTH);
+        card.add(sp, BorderLayout.CENTER);
+
+        root.add(card, BorderLayout.CENTER);
 
         // Search filter
         searchField.getDocument().addDocumentListener(new DocumentListener() {
@@ -167,13 +202,29 @@ public class EmployeePanel extends JPanel {
         editBtn.addActionListener(e -> startEdit());
         deleteBtn.addActionListener(e -> deleteEmployee());
 
-        return panel;
+        return root;
     }
 
-    private void setButtonSize(JButton btn, Dimension size) {
+    private JPanel createCard(LayoutManager layout) {
+        JPanel p = new JPanel(layout);
+        p.setBackground(CARD_BG);
+        return p;
+    }
+
+    private void styleButton(JButton btn, Dimension size) {
+        btn.setFocusPainted(false);
         btn.setPreferredSize(size);
         btn.setMinimumSize(size);
         btn.setMaximumSize(size);
+    }
+
+    private void styleDangerButton(JButton btn, Dimension size) {
+        styleButton(btn, size);
+        btn.setForeground(new Color(120, 40, 40));
+        btn.setBackground(new Color(245, 225, 225));
+        btn.setOpaque(true);
+        btn.setBorderPainted(false);
+        btn.setContentAreaFilled(true);
     }
 
     private void setActionButtonsEnabled(boolean enabled) {
@@ -219,61 +270,79 @@ public class EmployeePanel extends JPanel {
 
     // ===================== FORM VIEW (TABBED) =====================
     private JPanel buildFormView() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(new EmptyBorder(14, 14, 14, 14));
+        JPanel root = new JPanel(new BorderLayout(14, 14));
+        root.setBackground(BG);
+        root.setBorder(new EmptyBorder(18, 18, 18, 18));
 
-        // Top bar (title + back)
-        JPanel top = new JPanel(new BorderLayout());
+        // Header
+        JPanel header = new JPanel(new BorderLayout(12, 12));
+        header.setOpaque(false);
+
         formTitle = new JLabel("Employee Details");
-        formTitle.setFont(new Font("Arial", Font.BOLD, 18));
+        formTitle.setFont(new Font("Arial", Font.BOLD, 22));
+        formTitle.setForeground(TEXT);
 
         JButton backToListBtn = new JButton("Back to List");
+        backToListBtn.setFocusPainted(false);
         backToListBtn.addActionListener(e -> showListView());
 
-        top.add(formTitle, BorderLayout.WEST);
-        top.add(backToListBtn, BorderLayout.EAST);
-        panel.add(top, BorderLayout.NORTH);
+        header.add(formTitle, BorderLayout.WEST);
+        header.add(backToListBtn, BorderLayout.EAST);
 
-        // Tabs
+        root.add(header, BorderLayout.NORTH);
+
+        // Card with tabs
+        JPanel card = createCard(new BorderLayout(12, 12));
+        card.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(BORDER),
+                new EmptyBorder(14, 14, 14, 14)
+        ));
+
         JTabbedPane tabs = new JTabbedPane();
+        tabs.setBackground(CARD_BG);
+
         tabs.addTab("Basic", buildBasicTab());
         tabs.addTab("Gov IDs", buildGovTab());
         tabs.addTab("Compensation", buildCompTab());
 
-        panel.add(tabs, BorderLayout.CENTER);
+        card.add(tabs, BorderLayout.CENTER);
 
-        // Bottom buttons
+        // Bottom buttons (inside the card for cleaner UI)
         JPanel bottom = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        bottom.setOpaque(false);
+
         saveBtn = new JButton("Save");
         cancelBtn = new JButton("Cancel");
 
         Dimension btnSize = new Dimension(110, 34);
-        setButtonSize(saveBtn, btnSize);
-        setButtonSize(cancelBtn, btnSize);
+        styleButton(saveBtn, btnSize);
+        styleButton(cancelBtn, btnSize);
 
         saveBtn.addActionListener(e -> saveEmployee());
         cancelBtn.addActionListener(e -> showListView());
 
-        bottom.add(saveBtn);
         bottom.add(cancelBtn);
+        bottom.add(saveBtn);
 
-        panel.add(bottom, BorderLayout.SOUTH);
+        card.add(bottom, BorderLayout.SOUTH);
 
-        return panel;
+        root.add(card, BorderLayout.CENTER);
+
+        return root;
     }
 
     private JPanel buildBasicTab() {
         JPanel form = new JPanel(new GridBagLayout());
+        form.setBackground(CARD_BG);
         form.setBorder(new EmptyBorder(10, 10, 10, 10));
         GridBagConstraints gbc = baseGbc();
 
-        // Fields
         empNoField = new JTextField(18); empNoField.setEditable(false);
         lastNameField = new JTextField(18);
         firstNameField = new JTextField(18);
 
         birthdayField = createMaskedField("##/##/####"); // MM/dd/yyyy
-        phoneField = createMaskedField("###-###-###"); // 11 digits example
+        phoneField = createMaskedField("###-###-###");   // example format
 
         addressField = new JTextField(18);
 
@@ -283,7 +352,6 @@ public class EmployeePanel extends JPanel {
 
         int row = 0;
 
-        // Required markers: Employee #*, Last Name*, First Name*, Birthday*
         row = addRow(form, gbc, row, required("Employee #"), empNoField);
         row = addRow(form, gbc, row, required("Last Name"), lastNameField);
         row = addRow(form, gbc, row, required("First Name"), firstNameField);
@@ -292,20 +360,19 @@ public class EmployeePanel extends JPanel {
         row = addRow(form, gbc, row, "Phone Number (###-###-###)", phoneField);
         row = addRow(form, gbc, row, "Address", addressField);
 
-        // Employment details (not required but important)
         row = addSeparator(form, gbc, row, "Employment Details");
         row = addRow(form, gbc, row, "Status", statusCombo);
         row = addRow(form, gbc, row, "Position", positionField);
         row = addRow(form, gbc, row, "Immediate Supervisor", supervisorField);
 
-        row = addHint(form, gbc, row,
-                "Fields marked with * are required. Birthday uses MM/dd/yyyy format.");
+        row = addHint(form, gbc, row, "Fields marked with * are required. Birthday uses MM/dd/yyyy format.");
 
         return wrapScrollable(form);
     }
 
     private JPanel buildGovTab() {
         JPanel form = new JPanel(new GridBagLayout());
+        form.setBackground(CARD_BG);
         form.setBorder(new EmptyBorder(10, 10, 10, 10));
         GridBagConstraints gbc = baseGbc();
 
@@ -320,14 +387,14 @@ public class EmployeePanel extends JPanel {
         row = addRow(form, gbc, row, "TIN #", tinField);
         row = addRow(form, gbc, row, "Pag-IBIG #", pagibigField);
 
-        row = addHint(form, gbc, row,
-                "Tip: You can store IDs as numbers or formatted strings. They will be saved to CSV.");
+        row = addHint(form, gbc, row, "Tip: You can store IDs as numbers or formatted strings. They will be saved to CSV.");
 
         return wrapScrollable(form);
     }
 
     private JPanel buildCompTab() {
         JPanel form = new JPanel(new GridBagLayout());
+        form.setBackground(CARD_BG);
         form.setBorder(new EmptyBorder(10, 10, 10, 10));
         GridBagConstraints gbc = baseGbc();
 
@@ -346,8 +413,7 @@ public class EmployeePanel extends JPanel {
         row = addRow(form, gbc, row, "Gross Semi-monthly Rate", grossSemiField);
         row = addRow(form, gbc, row, "Hourly Rate", hourlyField);
 
-        row = addHint(form, gbc, row,
-                "Enter numeric values only (e.g., 25000 or 25000.50). Negative values are not allowed.");
+        row = addHint(form, gbc, row, "Enter numeric values only (e.g., 25000 or 25000.50). Negative values are not allowed.");
 
         return wrapScrollable(form);
     }
@@ -368,7 +434,7 @@ public class EmployeePanel extends JPanel {
         gbc.gridx = 0; gbc.gridy = row; gbc.gridwidth = 2;
         JLabel label = new JLabel(title);
         label.setFont(new Font("Arial", Font.BOLD, 13));
-        label.setForeground(Color.DARK_GRAY);
+        label.setForeground(MUTED);
         form.add(label, gbc);
         gbc.gridwidth = 1;
         return row + 1;
@@ -377,6 +443,7 @@ public class EmployeePanel extends JPanel {
     private int addRow(JPanel form, GridBagConstraints gbc, int row, String labelText, JComponent field) {
         gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0.35;
         JLabel label = new JLabel(labelText);
+        label.setForeground(TEXT);
         form.add(label, gbc);
 
         gbc.gridx = 1; gbc.weightx = 0.65;
@@ -387,7 +454,7 @@ public class EmployeePanel extends JPanel {
 
     private int addHint(JPanel form, GridBagConstraints gbc, int row, String hint) {
         gbc.gridx = 0; gbc.gridy = row; gbc.gridwidth = 2;
-        JLabel label = new JLabel("<html><span style='font-size:10px;color:#555;'>" + hint + "</span></html>");
+        JLabel label = new JLabel("<html><span style='font-size:10px;color:#6E788C;'>" + hint + "</span></html>");
         form.add(label, gbc);
         gbc.gridwidth = 1;
         return row + 1;
@@ -410,7 +477,6 @@ public class EmployeePanel extends JPanel {
             field.setColumns(18);
             return field;
         } catch (ParseException e) {
-            // fallback if formatter fails
             return new JFormattedTextField();
         }
     }
@@ -507,7 +573,6 @@ public class EmployeePanel extends JPanel {
         String firstName = firstNameField.getText().trim();
         String birthday = birthdayField.getText().trim();
 
-        // Required validations (*)
         if (empNo.isEmpty() || lastName.isEmpty() || firstName.isEmpty() || birthday.isEmpty() || birthday.contains("_")) {
             JOptionPane.showMessageDialog(this,
                     "Please complete all required fields marked with *.",
@@ -524,7 +589,6 @@ public class EmployeePanel extends JPanel {
             return;
         }
 
-        // Phone: if user typed something, ensure it is complete (no underscores)
         String phone = phoneField.getText().trim();
         if (!phone.isEmpty() && phone.contains("_")) {
             JOptionPane.showMessageDialog(this,
@@ -534,7 +598,6 @@ public class EmployeePanel extends JPanel {
             return;
         }
 
-        // Parse numeric fields
         Double basic = parseMoney(basicSalaryField.getText(), "Basic Salary"); if (basic == null) return;
         Double rice = parseMoney(riceField.getText(), "Rice Subsidy"); if (rice == null) return;
         Double phoneA = parseMoney(phoneAllowField.getText(), "Phone Allowance"); if (phoneA == null) return;

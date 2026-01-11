@@ -13,12 +13,28 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.time.YearMonth;
-import java.util.ArrayList;
 import java.util.List;
 
 public class PayrollPanel extends JPanel {
 
     private final MainFrame mainFrame;
+
+    // THEME (light)
+    private static final Color BG = new Color(245, 247, 252);
+    private static final Color CARD_BG = Color.WHITE;
+    private static final Color BORDER = new Color(225, 230, 240);
+    private static final Color TEXT = new Color(35, 45, 65);
+    private static final Color MUTED = new Color(110, 120, 145);
+
+    // Status pill colors
+    private static final Color PILL_NEUTRAL_BG = new Color(235, 238, 245);
+    private static final Color PILL_NEUTRAL_FG = new Color(90, 100, 120);
+
+    private static final Color PILL_OK_BG = new Color(214, 245, 224);
+    private static final Color PILL_OK_FG = new Color(20, 120, 60);
+
+    private static final Color PILL_WARN_BG = new Color(255, 236, 200);
+    private static final Color PILL_WARN_FG = new Color(160, 120, 30);
 
     private List<Employee> employees;
 
@@ -37,12 +53,16 @@ public class PayrollPanel extends JPanel {
 
     // Compute tab (summary labels)
     private JLabel warnLabel;
+    private JLabel statusPill;
 
     private JLabel empNoVal, nameVal, positionVal, statusVal, monthVal;
     private JLabel daysPresentVal, lateMinutesVal, lateDeductVal;
     private JLabel basicVal, allowVal, grossVal;
     private JLabel sssVal, philVal, pagibigVal, totalGovVal;
     private JLabel taxableVal, taxVal, netVal;
+
+    // ✅ Compute actions
+    private JButton saveRecordBtn; // disabled until computed
 
     // Payslip tab
     private JTextArea payslipArea;
@@ -58,8 +78,9 @@ public class PayrollPanel extends JPanel {
     public PayrollPanel(MainFrame mainFrame) {
         this.mainFrame = mainFrame;
 
-        setLayout(new BorderLayout(10, 10));
-        setBorder(new EmptyBorder(12, 12, 12, 12));
+        setLayout(new BorderLayout(14, 14));
+        setBackground(BG);
+        setBorder(new EmptyBorder(18, 18, 18, 18));
 
         employees = CSVUtil.loadEmployees();
 
@@ -69,17 +90,30 @@ public class PayrollPanel extends JPanel {
 
     // ---------------- Header ----------------
     private JPanel buildHeader() {
-        JPanel header = new JPanel(new BorderLayout());
+        JPanel header = new JPanel(new BorderLayout(12, 12));
+        header.setOpaque(false);
 
-        JLabel title = new JLabel("Payroll Computation");
-        title.setFont(new Font("Arial", Font.BOLD, 18));
+        JLabel title = new JLabel("Payroll");
+        title.setFont(new Font("Arial", Font.BOLD, 24));
+        title.setForeground(TEXT);
 
-        JButton backBtn = new JButton("Back to Main Menu");
+        JLabel subtitle = new JLabel("Compute payroll using attendance and government deductions");
+        subtitle.setFont(new Font("Arial", Font.PLAIN, 13));
+        subtitle.setForeground(MUTED);
+
+        JPanel left = new JPanel();
+        left.setOpaque(false);
+        left.setLayout(new BoxLayout(left, BoxLayout.Y_AXIS));
+        left.add(title);
+        left.add(Box.createVerticalStrut(3));
+        left.add(subtitle);
+
+        JButton backBtn = new JButton("Back to Dashboard");
+        backBtn.setFocusPainted(false);
         backBtn.addActionListener(e -> mainFrame.showContent("DASHBOARD"));
 
-        header.add(title, BorderLayout.WEST);
+        header.add(left, BorderLayout.WEST);
         header.add(backBtn, BorderLayout.EAST);
-
         return header;
     }
 
@@ -88,26 +122,57 @@ public class PayrollPanel extends JPanel {
         JPanel left = buildLeftSelectionPanel();
 
         tabs = new JTabbedPane();
+        tabs.setBackground(CARD_BG);
+
         tabs.addTab("Compute", buildComputeTab());
         tabs.addTab("Payslip", buildPayslipTab());
         tabs.addTab("Monthly Summary", buildMonthlySummaryTab());
 
-        JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, left, tabs);
-        split.setResizeWeight(0.42);
-        split.setDividerLocation(420);
+        JPanel tabsCard = createCard(new BorderLayout());
+        tabsCard.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(BORDER),
+                new EmptyBorder(10, 10, 10, 10)
+        ));
+        tabsCard.add(tabs, BorderLayout.CENTER);
+
+        JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, left, tabsCard);
+        split.setResizeWeight(0.40);
+        split.setDividerLocation(430);
+        split.setBorder(null);
 
         return split;
     }
 
     // ---------------- Left Selection Panel ----------------
     private JPanel buildLeftSelectionPanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(new EmptyBorder(8, 8, 8, 8));
+        JPanel card = createCard(new BorderLayout(12, 12));
+        card.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(BORDER),
+                new EmptyBorder(14, 14, 14, 14)
+        ));
 
-        // Controls (Year/Month + buttons)
+        JLabel title = new JLabel("Select Employee");
+        title.setFont(new Font("Arial", Font.BOLD, 14));
+        title.setForeground(TEXT);
+
+        JLabel hint = new JLabel("Choose month/year, then compute payroll");
+        hint.setFont(new Font("Arial", Font.PLAIN, 12));
+        hint.setForeground(MUTED);
+
+        JPanel head = new JPanel();
+        head.setOpaque(false);
+        head.setLayout(new BoxLayout(head, BoxLayout.Y_AXIS));
+        head.add(title);
+        head.add(Box.createVerticalStrut(2));
+        head.add(hint);
+
+        card.add(head, BorderLayout.NORTH);
+
         JPanel controls = new JPanel(new GridBagLayout());
+        controls.setOpaque(false);
+
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(4, 4, 4, 4);
+        gbc.insets = new Insets(6, 6, 6, 6);
         gbc.anchor = GridBagConstraints.WEST;
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
@@ -122,25 +187,29 @@ public class PayrollPanel extends JPanel {
         monthCombo.setSelectedIndex(0);
 
         JButton refreshBtn = new JButton("Refresh");
+        refreshBtn.setFocusPainted(false);
         refreshBtn.addActionListener(e -> refreshEmployees());
 
         JButton computeSelectedBtn = new JButton("Compute Selected");
+        computeSelectedBtn.setFocusPainted(false);
         computeSelectedBtn.setFont(new Font("Arial", Font.BOLD, 12));
         computeSelectedBtn.addActionListener(e -> computeSelectedEmployee());
 
         JButton computeAllBtn = new JButton("Compute All (Monthly)");
+        computeAllBtn.setFocusPainted(false);
         computeAllBtn.addActionListener(e -> computeAllEmployeesForMonth());
 
         JButton clearBtn = new JButton("Clear");
+        clearBtn.setFocusPainted(false);
         clearBtn.addActionListener(e -> clearAllOutputs());
 
         gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0;
-        controls.add(new JLabel("Year:"), gbc);
+        controls.add(labelMuted("Year:"), gbc);
         gbc.gridx = 1; gbc.weightx = 1;
         controls.add(yearCombo, gbc);
 
         gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0;
-        controls.add(new JLabel("Month:"), gbc);
+        controls.add(labelMuted("Month:"), gbc);
         gbc.gridx = 1; gbc.weightx = 1;
         controls.add(monthCombo, gbc);
 
@@ -154,24 +223,20 @@ public class PayrollPanel extends JPanel {
         gbc.gridx = 1; gbc.weightx = 1;
         controls.add(computeAllBtn, gbc);
 
-        panel.add(controls, BorderLayout.NORTH);
-
-        // Search bar
-        JPanel search = new JPanel(new BorderLayout(6, 6));
-        search.add(new JLabel("Search (Name or Employee #):"), BorderLayout.NORTH);
+        JPanel search = new JPanel(new BorderLayout(8, 6));
+        search.setOpaque(false);
+        JLabel sTitle = labelMuted("Search (Name or Employee #):");
         searchField = new JTextField();
+        search.add(sTitle, BorderLayout.NORTH);
         search.add(searchField, BorderLayout.CENTER);
 
-        panel.add(search, BorderLayout.SOUTH);
-
-        // Employee table
         empTableModel = new DefaultTableModel(new Object[]{"Employee #", "Name", "Position", "Status"}, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
 
         employeeTable = new JTable(empTableModel);
         employeeTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        employeeTable.setRowHeight(22);
+        employeeTable.setRowHeight(26);
 
         empSorter = new TableRowSorter<>(empTableModel);
         employeeTable.setRowSorter(empSorter);
@@ -184,9 +249,30 @@ public class PayrollPanel extends JPanel {
             @Override public void changedUpdate(javax.swing.event.DocumentEvent e) { applySearch(); }
         });
 
-        panel.add(new JScrollPane(employeeTable), BorderLayout.CENTER);
+        JScrollPane tableScroll = new JScrollPane(employeeTable);
+        tableScroll.setBorder(BorderFactory.createLineBorder(BORDER));
 
-        return panel;
+        JPanel center = new JPanel(new BorderLayout(10, 10));
+        center.setOpaque(false);
+        center.add(controls, BorderLayout.NORTH);
+        center.add(tableScroll, BorderLayout.CENTER);
+        center.add(search, BorderLayout.SOUTH);
+
+        card.add(center, BorderLayout.CENTER);
+
+        return card;
+    }
+
+    private JLabel labelMuted(String text) {
+        JLabel l = new JLabel(text);
+        l.setForeground(MUTED);
+        return l;
+    }
+
+    private JPanel createCard(LayoutManager layout) {
+        JPanel p = new JPanel(layout);
+        p.setBackground(CARD_BG);
+        return p;
     }
 
     private void applySearch() {
@@ -238,20 +324,28 @@ public class PayrollPanel extends JPanel {
 
     // ---------------- Compute Tab ----------------
     private JPanel buildComputeTab() {
-        JPanel wrap = new JPanel(new BorderLayout(10, 10));
-        wrap.setBorder(new EmptyBorder(10, 10, 10, 10));
+        JPanel wrap = new JPanel(new BorderLayout(12, 12));
+        wrap.setBackground(CARD_BG);
+        wrap.setBorder(new EmptyBorder(12, 12, 12, 12));
 
-        // Warning/info line
+        JPanel topRow = new JPanel(new BorderLayout(10, 0));
+        topRow.setOpaque(false);
+
         warnLabel = new JLabel("Select an employee then click “Compute Selected”.");
-        warnLabel.setForeground(new Color(80, 80, 80));
-        wrap.add(warnLabel, BorderLayout.NORTH);
+        warnLabel.setForeground(MUTED);
 
-        // Summary grid
+        statusPill = createStatusPill("WAITING", PILL_NEUTRAL_BG, PILL_NEUTRAL_FG);
+
+        topRow.add(warnLabel, BorderLayout.WEST);
+        topRow.add(statusPill, BorderLayout.EAST);
+
+        wrap.add(topRow, BorderLayout.NORTH);
+
         JPanel grid = new JPanel(new GridBagLayout());
-        grid.setBorder(new EmptyBorder(4, 0, 0, 0));
+        grid.setOpaque(false);
 
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(4, 6, 4, 6);
+        gbc.insets = new Insets(4, 8, 4, 8);
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.weightx = 1;
 
@@ -286,30 +380,53 @@ public class PayrollPanel extends JPanel {
 
         r = section(grid, gbc, r, "Tax & Net Pay");
         taxableVal = valLabel(); taxVal = valLabel(); netVal = new JLabel("-");
-        netVal.setFont(new Font("Arial", Font.BOLD, 16));
+        netVal.setFont(new Font("Arial", Font.BOLD, 18));
+        netVal.setForeground(TEXT);
         r = row(grid, gbc, r, "Taxable Income:", taxableVal);
         r = row(grid, gbc, r, "Withholding Tax:", taxVal);
         r = row(grid, gbc, r, "NET PAY:", netVal);
 
         JScrollPane sp = new JScrollPane(grid);
-        sp.setBorder(BorderFactory.createEmptyBorder());
+        sp.setBorder(BorderFactory.createLineBorder(BORDER));
         wrap.add(sp, BorderLayout.CENTER);
 
-        // Bottom actions: Save Record
         JPanel bottom = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-        JButton saveRecordBtn = new JButton("Save Record");
-        saveRecordBtn.addActionListener(e -> saveLastRecord());
-        bottom.add(saveRecordBtn);
+        bottom.setOpaque(false);
 
+        saveRecordBtn = new JButton("Save Record");
+        saveRecordBtn.setFocusPainted(false);
+        saveRecordBtn.setEnabled(false); // ✅ disabled until computed
+        saveRecordBtn.addActionListener(e -> saveLastRecord());
+
+        bottom.add(saveRecordBtn);
         wrap.add(bottom, BorderLayout.SOUTH);
 
         clearComputeView();
+        setStatus("WAITING", PILL_NEUTRAL_BG, PILL_NEUTRAL_FG);
         return wrap;
+    }
+
+    private JLabel createStatusPill(String text, Color bg, Color fg) {
+        JLabel pill = new JLabel(text);
+        pill.setOpaque(true);
+        pill.setBackground(bg);
+        pill.setForeground(fg);
+        pill.setFont(new Font("Arial", Font.BOLD, 12));
+        pill.setBorder(new EmptyBorder(6, 10, 6, 10));
+        return pill;
+    }
+
+    private void setStatus(String text, Color bg, Color fg) {
+        if (statusPill == null) return;
+        statusPill.setText(text);
+        statusPill.setBackground(bg);
+        statusPill.setForeground(fg);
     }
 
     private JLabel valLabel() {
         JLabel l = new JLabel("-");
         l.setFont(new Font("Arial", Font.PLAIN, 13));
+        l.setForeground(TEXT);
         return l;
     }
 
@@ -320,7 +437,7 @@ public class PayrollPanel extends JPanel {
 
         JLabel label = new JLabel(title);
         label.setFont(new Font("Arial", Font.BOLD, 13));
-        label.setForeground(new Color(60, 60, 60));
+        label.setForeground(MUTED);
 
         grid.add(label, gbc);
         gbc.gridwidth = 1;
@@ -331,7 +448,10 @@ public class PayrollPanel extends JPanel {
         gbc.gridx = 0;
         gbc.gridy = row;
         gbc.weightx = 0.35;
-        grid.add(new JLabel(left), gbc);
+
+        JLabel l = new JLabel(left);
+        l.setForeground(MUTED);
+        grid.add(l, gbc);
 
         gbc.gridx = 1;
         gbc.weightx = 0.65;
@@ -342,19 +462,42 @@ public class PayrollPanel extends JPanel {
 
     // ---------------- Payslip Tab ----------------
     private JPanel buildPayslipTab() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        JPanel panel = new JPanel(new BorderLayout(12, 12));
+        panel.setBackground(CARD_BG);
+        panel.setBorder(new EmptyBorder(12, 12, 12, 12));
+
+        JLabel title = new JLabel("Payslip Preview");
+        title.setFont(new Font("Arial", Font.BOLD, 14));
+        title.setForeground(TEXT);
+
+        JLabel hint = new JLabel("Compute an employee to generate the payslip.");
+        hint.setFont(new Font("Arial", Font.PLAIN, 12));
+        hint.setForeground(MUTED);
+
+        JPanel top = new JPanel();
+        top.setOpaque(false);
+        top.setLayout(new BoxLayout(top, BoxLayout.Y_AXIS));
+        top.add(title);
+        top.add(Box.createVerticalStrut(2));
+        top.add(hint);
+
+        panel.add(top, BorderLayout.NORTH);
 
         payslipArea = new JTextArea();
         payslipArea.setEditable(false);
         payslipArea.setFont(new Font("Monospaced", Font.PLAIN, 14));
         payslipArea.setText("Payslip will appear here after computing an employee.\n");
+        payslipArea.setBorder(new EmptyBorder(10, 10, 10, 10));
 
         JScrollPane sp = new JScrollPane(payslipArea);
+        sp.setBorder(BorderFactory.createLineBorder(BORDER));
         panel.add(sp, BorderLayout.CENTER);
 
         JPanel bottom = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        bottom.setOpaque(false);
+
         JButton copyBtn = new JButton("Copy Payslip");
+        copyBtn.setFocusPainted(false);
         copyBtn.addActionListener(e -> {
             payslipArea.selectAll();
             payslipArea.copy();
@@ -370,12 +513,26 @@ public class PayrollPanel extends JPanel {
 
     // ---------------- Monthly Summary Tab ----------------
     private JPanel buildMonthlySummaryTab() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        JPanel panel = new JPanel(new BorderLayout(12, 12));
+        panel.setBackground(CARD_BG);
+        panel.setBorder(new EmptyBorder(12, 12, 12, 12));
 
-        JLabel title = new JLabel("Monthly Summary (Compute All Employees)");
+        JLabel title = new JLabel("Monthly Summary");
         title.setFont(new Font("Arial", Font.BOLD, 14));
-        panel.add(title, BorderLayout.NORTH);
+        title.setForeground(TEXT);
+
+        JLabel hint = new JLabel("Click “Compute All (Monthly)” on the left to populate this table.");
+        hint.setFont(new Font("Arial", Font.PLAIN, 12));
+        hint.setForeground(MUTED);
+
+        JPanel top = new JPanel();
+        top.setOpaque(false);
+        top.setLayout(new BoxLayout(top, BoxLayout.Y_AXIS));
+        top.add(title);
+        top.add(Box.createVerticalStrut(2));
+        top.add(hint);
+
+        panel.add(top, BorderLayout.NORTH);
 
         monthTableModel = new DefaultTableModel(
                 new Object[]{"Employee #", "Name", "Days Present", "Late (min)", "Gov Deductions", "Tax", "Net Pay"},
@@ -385,25 +542,32 @@ public class PayrollPanel extends JPanel {
         };
 
         JTable table = new JTable(monthTableModel);
-        table.setRowHeight(22);
+        table.setRowHeight(26);
 
-        panel.add(new JScrollPane(table), BorderLayout.CENTER);
+        JScrollPane sp = new JScrollPane(table);
+        sp.setBorder(BorderFactory.createLineBorder(BORDER));
+        panel.add(sp, BorderLayout.CENTER);
 
-        JPanel totals = new JPanel(new GridLayout(2, 2, 10, 6));
-        totals.setBorder(new EmptyBorder(8, 0, 0, 0));
+        JPanel totalsCard = new JPanel(new GridLayout(2, 2, 12, 10));
+        totalsCard.setBackground(new Color(250, 251, 253));
+        totalsCard.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(BORDER),
+                new EmptyBorder(12, 12, 12, 12)
+        ));
 
         monthCountVal = new JLabel("-");
         monthTotalGovVal = new JLabel("-");
         monthTotalTaxVal = new JLabel("-");
         monthTotalNetVal = new JLabel("-");
-        monthTotalNetVal.setFont(new Font("Arial", Font.BOLD, 14));
+        monthTotalNetVal.setFont(new Font("Arial", Font.BOLD, 16));
+        monthTotalNetVal.setForeground(TEXT);
 
-        totals.add(labelPair("Employees Computed:", monthCountVal));
-        totals.add(labelPair("Total Gov Deductions:", monthTotalGovVal));
-        totals.add(labelPair("Total Withholding Tax:", monthTotalTaxVal));
-        totals.add(labelPair("Total Net Pay:", monthTotalNetVal));
+        totalsCard.add(labelPair("Employees Computed:", monthCountVal));
+        totalsCard.add(labelPair("Total Gov Deductions:", monthTotalGovVal));
+        totalsCard.add(labelPair("Total Withholding Tax:", monthTotalTaxVal));
+        totalsCard.add(labelPair("Total Net Pay:", monthTotalNetVal));
 
-        panel.add(totals, BorderLayout.SOUTH);
+        panel.add(totalsCard, BorderLayout.SOUTH);
 
         clearMonthlySummary();
         return panel;
@@ -411,7 +575,14 @@ public class PayrollPanel extends JPanel {
 
     private JPanel labelPair(String left, JLabel right) {
         JPanel p = new JPanel(new BorderLayout());
-        p.add(new JLabel(left), BorderLayout.WEST);
+        p.setOpaque(false);
+
+        JLabel l = new JLabel(left);
+        l.setForeground(MUTED);
+
+        right.setForeground(TEXT);
+
+        p.add(l, BorderLayout.WEST);
         p.add(right, BorderLayout.EAST);
         return p;
     }
@@ -436,13 +607,17 @@ public class PayrollPanel extends JPanel {
         lastRecord = pr;
         lastEmployee = emp;
 
-        // Warn if no attendance found
+        // ✅ enable save once computed
+        saveRecordBtn.setEnabled(true);
+
         if (summary.daysPresent == 0) {
             warnLabel.setText("Warning: No attendance entries found for this employee in " + ym + ". Payroll computed with 0 attendance.");
-            warnLabel.setForeground(new Color(150, 80, 0));
+            warnLabel.setForeground(PILL_WARN_FG);
+            setStatus("NO ATTENDANCE", PILL_WARN_BG, PILL_WARN_FG);
         } else {
             warnLabel.setText("Computed successfully. You can Save Record or view Payslip.");
-            warnLabel.setForeground(new Color(20, 120, 60));
+            warnLabel.setForeground(PILL_OK_FG);
+            setStatus("COMPUTED", PILL_OK_BG, PILL_OK_FG);
         }
 
         updateComputeView(pr, emp);
@@ -455,7 +630,6 @@ public class PayrollPanel extends JPanel {
     private void computeAllEmployeesForMonth() {
         YearMonth ym = getSelectedMonth();
 
-        List<PayrollRecord> records = new ArrayList<>();
         monthTableModel.setRowCount(0);
 
         double totalGov = 0;
@@ -467,7 +641,6 @@ public class PayrollPanel extends JPanel {
                     AttendanceUtil.summarizeForEmployeeMonth(emp.getEmployeeNumber(), ym);
 
             PayrollRecord pr = PayrollCalculator.computeMonthlyPayroll(emp, ym, summary.daysPresent, summary.totalLateMinutes);
-            records.add(pr);
 
             double gov = pr.getTotalDeductionsBeforeTax();
             double tax = pr.getWithholdingTax();
@@ -488,7 +661,7 @@ public class PayrollPanel extends JPanel {
             });
         }
 
-        monthCountVal.setText(String.valueOf(records.size()));
+        monthCountVal.setText(String.valueOf(employees.size()));
         monthTotalGovVal.setText(money(totalGov));
         monthTotalTaxVal.setText(money(totalTax));
         monthTotalNetVal.setText(money(totalNet));
@@ -525,7 +698,11 @@ public class PayrollPanel extends JPanel {
         clearMonthlySummary();
 
         warnLabel.setText("Cleared. Select an employee then click “Compute Selected”.");
-        warnLabel.setForeground(new Color(80, 80, 80));
+        warnLabel.setForeground(MUTED);
+
+        if (saveRecordBtn != null) saveRecordBtn.setEnabled(false);
+
+        setStatus("WAITING", PILL_NEUTRAL_BG, PILL_NEUTRAL_FG);
     }
 
     // ---------------- UI updates ----------------
