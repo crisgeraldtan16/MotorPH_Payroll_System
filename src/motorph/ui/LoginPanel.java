@@ -18,7 +18,7 @@ public class LoginPanel extends JPanel {
         setLayout(new GridBagLayout());
 
         JLabel title = new JLabel("MotorPH Payroll System - Login");
-        title.setFont(new Font("Arial", Font.BOLD, 20));
+        title.setFont(new Font("Arial", Font.BOLD, 30));
 
         JLabel userLabel = new JLabel("Username:");
         JLabel passLabel = new JLabel("Password:");

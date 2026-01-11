@@ -18,7 +18,7 @@ public class SideMenuPanel extends JPanel {
         titleWrapper.setOpaque(false);
 
         JLabel titleLabel = new JLabel("<html><center>MotorPH<br/>Payroll System</center></html>");
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 16));
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 22));
         titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
         titleWrapper.add(Box.createHorizontalGlue());

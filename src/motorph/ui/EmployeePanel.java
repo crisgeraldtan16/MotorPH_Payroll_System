@@ -72,7 +72,7 @@ public class EmployeePanel extends JPanel {
         // Header
         JPanel headerRow = new JPanel(new BorderLayout());
         JLabel titleLabel = new JLabel("Employee Management System");
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 18));
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 22));
 
         JLabel subtitleLabel = new JLabel("Manage employee records (CSV-based storage)");
         subtitleLabel.setFont(new Font("Arial", Font.PLAIN, 12));
