@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 
 public class DashboardPanel extends JPanel {
 
-    // Theme (matches your modern dark sidebar)
+    // Theme
     private static final Color BG = new Color(245, 247, 252);
     private static final Color CARD_BG = Color.WHITE;
     private static final Color BORDER = new Color(225, 230, 240);
