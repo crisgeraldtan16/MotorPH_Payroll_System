@@ -1,5 +1,6 @@
 package motorph.ui;
 
+import motorph.model.AttendanceEntry;
 import motorph.model.Employee;
 import motorph.model.PayrollRecord;
 import motorph.util.AttendanceUtil;
@@ -13,6 +14,7 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.time.YearMonth;
+import java.util.ArrayList;
 import java.util.List;
 
 public class PayrollPanel extends JPanel {
@@ -51,7 +53,7 @@ public class PayrollPanel extends JPanel {
     // Tabs
     private JTabbedPane tabs;
 
-    // Compute tab (summary labels)
+    // Compute tab
     private JLabel warnLabel;
     private JLabel statusPill;
 
@@ -61,7 +63,6 @@ public class PayrollPanel extends JPanel {
     private JLabel sssVal, philVal, pagibigVal, totalGovVal;
     private JLabel taxableVal, taxVal, netVal;
 
-    // ✅ Compute actions
     private JButton saveRecordBtn; // disabled until computed
 
     // Payslip tab
@@ -70,6 +71,10 @@ public class PayrollPanel extends JPanel {
     // Monthly summary tab
     private DefaultTableModel monthTableModel;
     private JLabel monthTotalNetVal, monthTotalTaxVal, monthTotalGovVal, monthCountVal;
+
+    // Timecard tab
+    private DefaultTableModel timecardTableModel;
+    private JLabel timecardDaysVal, timecardHoursVal, timecardLateVal;
 
     // Last computed record
     private PayrollRecord lastRecord;
@@ -127,6 +132,7 @@ public class PayrollPanel extends JPanel {
         tabs.addTab("Compute", buildComputeTab());
         tabs.addTab("Payslip", buildPayslipTab());
         tabs.addTab("Monthly Summary", buildMonthlySummaryTab());
+        tabs.addTab("Timecard", buildTimecardTab()); // ✅ NEW
 
         JPanel tabsCard = createCard(new BorderLayout());
         tabsCard.setBorder(BorderFactory.createCompoundBorder(
@@ -155,7 +161,7 @@ public class PayrollPanel extends JPanel {
         title.setFont(new Font("Arial", Font.BOLD, 14));
         title.setForeground(TEXT);
 
-        JLabel hint = new JLabel("Choose month/year, then compute payroll");
+        JLabel hint = new JLabel("Choose month/year, then compute payroll or view timecard");
         hint.setFont(new Font("Arial", Font.PLAIN, 12));
         hint.setForeground(MUTED);
 
@@ -195,6 +201,10 @@ public class PayrollPanel extends JPanel {
         computeSelectedBtn.setFont(new Font("Arial", Font.BOLD, 12));
         computeSelectedBtn.addActionListener(e -> computeSelectedEmployee());
 
+        JButton viewTimecardBtn = new JButton("View Timecard");
+        viewTimecardBtn.setFocusPainted(false);
+        viewTimecardBtn.addActionListener(e -> viewSelectedTimecard());
+
         JButton computeAllBtn = new JButton("Compute All (Monthly)");
         computeAllBtn.setFocusPainted(false);
         computeAllBtn.addActionListener(e -> computeAllEmployeesForMonth());
@@ -219,9 +229,13 @@ public class PayrollPanel extends JPanel {
         controls.add(computeSelectedBtn, gbc);
 
         gbc.gridx = 0; gbc.gridy = 3; gbc.weightx = 0;
-        controls.add(clearBtn, gbc);
+        controls.add(viewTimecardBtn, gbc);
         gbc.gridx = 1; gbc.weightx = 1;
+        controls.add(clearBtn, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 2;
         controls.add(computeAllBtn, gbc);
+        gbc.gridwidth = 1;
 
         JPanel search = new JPanel(new BorderLayout(8, 6));
         search.setOpaque(false);
@@ -587,6 +601,114 @@ public class PayrollPanel extends JPanel {
         return p;
     }
 
+    // ----------------  Timecard Tab ----------------
+    private JPanel buildTimecardTab() {
+        JPanel panel = new JPanel(new BorderLayout(12, 12));
+        panel.setBackground(CARD_BG);
+        panel.setBorder(new EmptyBorder(12, 12, 12, 12));
+
+        JLabel title = new JLabel("Timecard (Daily Logs)");
+        title.setFont(new Font("Arial", Font.BOLD, 14));
+        title.setForeground(TEXT);
+
+        JLabel hint = new JLabel("Select employee + month, then click “View Timecard”.");
+        hint.setFont(new Font("Arial", Font.PLAIN, 12));
+        hint.setForeground(MUTED);
+
+        JPanel top = new JPanel();
+        top.setOpaque(false);
+        top.setLayout(new BoxLayout(top, BoxLayout.Y_AXIS));
+        top.add(title);
+        top.add(Box.createVerticalStrut(2));
+        top.add(hint);
+
+        panel.add(top, BorderLayout.NORTH);
+
+        timecardTableModel = new DefaultTableModel(
+                new Object[]{"Date", "Time In", "Time Out", "Late (min)", "Worked Hours"},
+                0
+        ) {
+            @Override public boolean isCellEditable(int r, int c) { return false; }
+        };
+
+        JTable table = new JTable(timecardTableModel);
+        table.setRowHeight(26);
+
+        JScrollPane sp = new JScrollPane(table);
+        sp.setBorder(BorderFactory.createLineBorder(BORDER));
+        panel.add(sp, BorderLayout.CENTER);
+
+        JPanel totalsCard = new JPanel(new GridLayout(1, 3, 12, 10));
+        totalsCard.setBackground(new Color(250, 251, 253));
+        totalsCard.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(BORDER),
+                new EmptyBorder(12, 12, 12, 12)
+        ));
+
+        timecardDaysVal = new JLabel("-");
+        timecardLateVal = new JLabel("-");
+        timecardHoursVal = new JLabel("-");
+        timecardHoursVal.setFont(new Font("Arial", Font.BOLD, 14));
+        timecardHoursVal.setForeground(TEXT);
+
+        totalsCard.add(labelPair("Days with Logs:", timecardDaysVal));
+        totalsCard.add(labelPair("Total Late Minutes:", timecardLateVal));
+        totalsCard.add(labelPair("Total Worked Hours:", timecardHoursVal));
+
+        panel.add(totalsCard, BorderLayout.SOUTH);
+
+        clearTimecard();
+        return panel;
+    }
+
+    private void viewSelectedTimecard() {
+        Employee emp = getSelectedEmployee();
+        if (emp == null) {
+            JOptionPane.showMessageDialog(this, "Please select an employee first.", "No Selection", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        YearMonth ym = getSelectedMonth();
+        refreshTimecard(emp.getEmployeeNumber(), ym);
+        tabs.setSelectedIndex(3); // Timecard tab index
+    }
+
+    private void refreshTimecard(String employeeNo, YearMonth ym) {
+        List<AttendanceEntry> entries = AttendanceUtil.loadEntriesForEmployeeMonth(employeeNo, ym);
+
+        timecardTableModel.setRowCount(0);
+
+        double totalHours = 0.0;
+        long totalLate = 0;
+
+        for (AttendanceEntry e : entries) {
+            long late = AttendanceUtil.computeLateMinutesWithGrace(e.getTimeIn(), 10);
+            double hours = AttendanceUtil.computeWorkedHours(e.getTimeIn(), e.getTimeOut());
+
+            totalLate += late;
+            totalHours += hours;
+
+            timecardTableModel.addRow(new Object[]{
+                    e.getDate(),
+                    e.getTimeIn(),
+                    e.getTimeOut(),
+                    late,
+                    String.format("%.2f", hours)
+            });
+        }
+
+        timecardDaysVal.setText(String.valueOf(entries.size()));
+        timecardLateVal.setText(String.valueOf(totalLate));
+        timecardHoursVal.setText(String.format("%.2f", totalHours));
+    }
+
+    private void clearTimecard() {
+        if (timecardTableModel != null) timecardTableModel.setRowCount(0);
+        if (timecardDaysVal != null) timecardDaysVal.setText("-");
+        if (timecardLateVal != null) timecardLateVal.setText("-");
+        if (timecardHoursVal != null) timecardHoursVal.setText("-");
+    }
+
     // ---------------- Actions ----------------
     private void computeSelectedEmployee() {
         Employee emp = getSelectedEmployee();
@@ -607,7 +729,6 @@ public class PayrollPanel extends JPanel {
         lastRecord = pr;
         lastEmployee = emp;
 
-        // ✅ enable save once computed
         saveRecordBtn.setEnabled(true);
 
         if (summary.daysPresent == 0) {
@@ -624,12 +745,16 @@ public class PayrollPanel extends JPanel {
         payslipArea.setText(formatPayslip(pr, emp));
         payslipArea.setCaretPosition(0);
 
+        //  also refresh timecard automatically after compute
+        refreshTimecard(emp.getEmployeeNumber(), ym);
+
         tabs.setSelectedIndex(0);
     }
 
     private void computeAllEmployeesForMonth() {
         YearMonth ym = getSelectedMonth();
 
+        List<PayrollRecord> records = new ArrayList<>();
         monthTableModel.setRowCount(0);
 
         double totalGov = 0;
@@ -641,6 +766,7 @@ public class PayrollPanel extends JPanel {
                     AttendanceUtil.summarizeForEmployeeMonth(emp.getEmployeeNumber(), ym);
 
             PayrollRecord pr = PayrollCalculator.computeMonthlyPayroll(emp, ym, summary.daysPresent, summary.totalLateMinutes);
+            records.add(pr);
 
             double gov = pr.getTotalDeductionsBeforeTax();
             double tax = pr.getWithholdingTax();
@@ -661,7 +787,7 @@ public class PayrollPanel extends JPanel {
             });
         }
 
-        monthCountVal.setText(String.valueOf(employees.size()));
+        monthCountVal.setText(String.valueOf(records.size()));
         monthTotalGovVal.setText(money(totalGov));
         monthTotalTaxVal.setText(money(totalTax));
         monthTotalNetVal.setText(money(totalNet));
@@ -694,6 +820,7 @@ public class PayrollPanel extends JPanel {
         lastEmployee = null;
 
         clearComputeView();
+        clearTimecard();
         payslipArea.setText("Payslip will appear here after computing an employee.\n");
         clearMonthlySummary();
 
@@ -806,11 +933,6 @@ public class PayrollPanel extends JPanel {
 
         sb.append("NET PAY: ").append(money(pr.getNetPay())).append("\n");
         sb.append("===============================================\n");
-
-        sb.append("\nNotes:\n");
-        sb.append("- Late is deducted only if Time In is after 08:10 (10-minute grace).\n");
-        sb.append("- PhilHealth premium is 3% (min 300, max 1800), employee pays 50%.\n");
-        sb.append("- Withholding tax is computed AFTER applying government deductions.\n");
 
         return sb.toString();
     }
