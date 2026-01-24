@@ -1,26 +1,32 @@
 package motorph.util;
 
 import motorph.model.AttendanceEntry;
+import motorph.model.AttendanceRecord;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
+import java.io.*;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 public class AttendanceUtil {
 
-
-    // ProjectRoot/data/attendance.csv
     private static final String ATTENDANCE_CSV_PATH = "data/attendance.csv";
 
     // Company rules
     private static final LocalTime START_TIME = LocalTime.of(8, 0);
-    private static final int GRACE_MINUTES = 10; // salary deduction applies if time-in is 08:11 onwards
+    private static final int GRACE_MINUTES = 10;
+
+    // Your attendance header (must match exactly)
+    private static final String HEADER = "Employee #,Last Name,First Name,Date,Log In,Log Out";
+
+    // Date/Time output formats (what we write back to CSV)
+    private static final DateTimeFormatter OUT_DATE = DateTimeFormatter.ofPattern("MM/dd/yyyy");
+    private static final DateTimeFormatter OUT_TIME = DateTimeFormatter.ofPattern("HH:mm");
 
     public static class AttendanceSummary {
         public final int daysPresent;
@@ -32,10 +38,7 @@ public class AttendanceUtil {
         }
     }
 
-    /**
-     * Returns Days Present + Total Late Minutes for the employee/month.
-     * Uses the same data as the Timecard loader below.
-     */
+    // ===================== PAYROLL SUMMARY =====================
     public static AttendanceSummary summarizeForEmployeeMonth(String employeeNo, YearMonth ym) {
         List<AttendanceEntry> entries = loadEntriesForEmployeeMonth(employeeNo, ym);
 
@@ -49,24 +52,87 @@ public class AttendanceUtil {
         return new AttendanceSummary(daysPresent, totalLateMinutes);
     }
 
+    // ===================== TIME CARD LOADERS =====================
     /**
-     *  Loads full daily logs (timecard) for one employee in a selected month.
-     *
-     * CSV header:
-     * Employee #,Last Name,First Name,Date,Log In,Log Out
-     *
-     * Column mapping:
-     * 0 = Employee #
-     * 3 = Date
-     * 4 = Log In
-     * 5 = Log Out
-     *
-     * Date formats supported: MM/dd/yyyy OR yyyy-MM-dd
-     * Time formats supported: H:mm, HH:mm, H:mm:ss, HH:mm:ss
+     * Loads attendance records (full fields) for one employee in a month.
+     * CSV header: Employee #,Last Name,First Name,Date,Log In,Log Out
+     */
+    public static List<AttendanceRecord> loadRecordsForEmployeeMonth(String employeeNo, YearMonth ym) {
+        List<AttendanceRecord> list = new ArrayList<>();
+        for (AttendanceRecord r : loadAllRecords()) {
+            if (!employeeNo.equals(r.getEmployeeNumber())) continue;
+            if (r.getDate() == null) continue;
+            if (!YearMonth.from(r.getDate()).equals(ym)) continue;
+            list.add(r);
+        }
+
+        list.sort(Comparator.comparing(AttendanceRecord::getDate)
+                .thenComparing(AttendanceRecord::getLogIn, Comparator.nullsLast(Comparator.naturalOrder())));
+
+        return list;
+    }
+
+    /**
+     * Loads simplified entries used by payroll calculation / timecard table.
      */
     public static List<AttendanceEntry> loadEntriesForEmployeeMonth(String employeeNo, YearMonth ym) {
         List<AttendanceEntry> list = new ArrayList<>();
+        List<AttendanceRecord> records = loadRecordsForEmployeeMonth(employeeNo, ym);
 
+        for (AttendanceRecord r : records) {
+            if (r.getDate() == null || r.getLogIn() == null || r.getLogOut() == null) continue;
+            list.add(new AttendanceEntry(r.getEmployeeNumber(), r.getDate(), r.getLogIn(), r.getLogOut()));
+        }
+        return list;
+    }
+
+    // ===================== TIME CARD CRUD =====================
+    public static void addRecord(AttendanceRecord record) throws IOException {
+        List<AttendanceRecord> all = loadAllRecords();
+        all.add(record);
+        saveAllRecords(all);
+    }
+
+    public static void updateRecord(AttendanceRecord originalKey, AttendanceRecord updated) throws IOException {
+        List<AttendanceRecord> all = loadAllRecords();
+        int idx = findRecordIndex(all, originalKey);
+        if (idx == -1) throw new IOException("Record not found to update.");
+        all.set(idx, updated);
+        saveAllRecords(all);
+    }
+
+    public static void deleteRecord(AttendanceRecord key) throws IOException {
+        List<AttendanceRecord> all = loadAllRecords();
+        int idx = findRecordIndex(all, key);
+        if (idx == -1) throw new IOException("Record not found to delete.");
+        all.remove(idx);
+        saveAllRecords(all);
+    }
+
+    // This identifies a record. We use Employee # + Date + Log In + Log Out.
+    private static int findRecordIndex(List<AttendanceRecord> all, AttendanceRecord key) {
+        for (int i = 0; i < all.size(); i++) {
+            AttendanceRecord r = all.get(i);
+            if (!safeEq(r.getEmployeeNumber(), key.getEmployeeNumber())) continue;
+            if (!safeEq(r.getDate(), key.getDate())) continue;
+            if (!safeEq(r.getLogIn(), key.getLogIn())) continue;
+            if (!safeEq(r.getLogOut(), key.getLogOut())) continue;
+            return i;
+        }
+        return -1;
+    }
+
+    private static boolean safeEq(Object a, Object b) {
+        if (a == null && b == null) return true;
+        if (a == null || b == null) return false;
+        return a.equals(b);
+    }
+
+    // Loads all attendance records (entire file)
+    public static List<AttendanceRecord> loadAllRecords() {
+        ensureFileExists();
+
+        List<AttendanceRecord> list = new ArrayList<>();
         try (BufferedReader br = new BufferedReader(new FileReader(ATTENDANCE_CSV_PATH))) {
             String line = br.readLine(); // header
             if (line == null) return list;
@@ -74,60 +140,87 @@ public class AttendanceUtil {
             while ((line = br.readLine()) != null) {
                 if (line.trim().isEmpty()) continue;
 
-                // Simple CSV split (ok if your fields don't contain commas)
                 String[] p = line.split(",", -1);
                 if (p.length < 6) continue;
 
-                String emp = p[0].trim();
-                if (!emp.equals(employeeNo)) continue;
+                AttendanceRecord r = new AttendanceRecord();
+                r.setEmployeeNumber(p[0].trim());
+                r.setLastName(p[1].trim());
+                r.setFirstName(p[2].trim());
+                r.setDate(parseDateFlexible(p[3].trim()));
+                r.setLogIn(parseTimeFlexible(p[4].trim()));
+                r.setLogOut(parseTimeFlexible(p[5].trim()));
 
-                String dateText = p[3].trim();
-                String inText = p[4].trim();
-                String outText = p[5].trim();
-
-                LocalDate date = parseDateFlexible(dateText);
-                LocalTime timeIn = parseTimeFlexible(inText);
-                LocalTime timeOut = parseTimeFlexible(outText);
-
-                // If missing log-in/log-out, skip (you can change this if needed)
-                if (date == null || timeIn == null || timeOut == null) continue;
-
-                // Only same selected month
-                if (!YearMonth.from(date).equals(ym)) continue;
-
-                list.add(new AttendanceEntry(emp, date, timeIn, timeOut));
+                list.add(r);
             }
-        } catch (Exception e) {
-            // Keep quiet to avoid UI spam if file missing.
-            // System.out.println("Attendance load error: " + e.getMessage());
-        }
+        } catch (Exception ignored) {}
+
+        // Keep a stable order in the file
+        list.sort(Comparator.comparing(AttendanceRecord::getEmployeeNumber, Comparator.nullsLast(String::compareTo))
+                .thenComparing(AttendanceRecord::getDate, Comparator.nullsLast(Comparator.naturalOrder()))
+                .thenComparing(AttendanceRecord::getLogIn, Comparator.nullsLast(Comparator.naturalOrder())));
 
         return list;
     }
 
-    /**
-     * Late minutes rule (10-minute grace):
-     * - If Time In is 08:00 to 08:10 => no late deduction
-     * - If Time In is 08:11 onwards => late minutes counted from 08:00
-     */
+    // Saves all records back to CSV (rewrite file)
+    public static void saveAllRecords(List<AttendanceRecord> records) throws IOException {
+        ensureFileExists();
+
+        try (PrintWriter pw = new PrintWriter(new FileWriter(ATTENDANCE_CSV_PATH))) {
+            pw.println(HEADER);
+
+            for (AttendanceRecord r : records) {
+                String date = (r.getDate() == null) ? "" : r.getDate().format(OUT_DATE);
+                String in = (r.getLogIn() == null) ? "" : r.getLogIn().format(OUT_TIME);
+                String out = (r.getLogOut() == null) ? "" : r.getLogOut().format(OUT_TIME);
+
+                pw.println(String.join(",",
+                        safeCsv(r.getEmployeeNumber()),
+                        safeCsv(r.getLastName()),
+                        safeCsv(r.getFirstName()),
+                        safeCsv(date),
+                        safeCsv(in),
+                        safeCsv(out)
+                ));
+            }
+        }
+    }
+
+    private static String safeCsv(String s) {
+        return (s == null) ? "" : s.trim();
+    }
+
+    private static void ensureFileExists() {
+        File f = new File(ATTENDANCE_CSV_PATH);
+        if (!f.exists()) {
+            try {
+                File parent = f.getParentFile();
+                if (parent != null) parent.mkdirs();
+                try (PrintWriter pw = new PrintWriter(new FileWriter(f))) {
+                    pw.println(HEADER);
+                }
+            } catch (Exception ignored) {}
+        }
+    }
+
+    // ===================== RULE HELPERS =====================
     public static long computeLateMinutesWithGrace(LocalTime timeIn, int graceMinutes) {
         LocalTime graceCutoff = START_TIME.plusMinutes(graceMinutes);
-        if (timeIn.isAfter(graceCutoff)) {
+        if (timeIn != null && timeIn.isAfter(graceCutoff)) {
             return Duration.between(START_TIME, timeIn).toMinutes();
         }
         return 0;
     }
 
-    /**
-     * Worked hours = TimeOut - TimeIn (in hours)
-     */
     public static double computeWorkedHours(LocalTime in, LocalTime out) {
+        if (in == null || out == null) return 0;
         long minutes = Duration.between(in, out).toMinutes();
-        if (minutes < 0) return 0; // safety
+        if (minutes < 0) return 0;
         return minutes / 60.0;
     }
 
-    // ---------- Helpers ----------
+    // ===================== PARSERS =====================
     private static LocalDate parseDateFlexible(String s) {
         if (s == null || s.isBlank()) return null;
 
