@@ -3,6 +3,7 @@ package motorph.util;
 import motorph.model.Employee;
 import motorph.model.PayrollRecord;
 
+import java.time.DayOfWeek;
 import java.time.YearMonth;
 
 public class PayrollCalculator {
@@ -13,59 +14,104 @@ public class PayrollCalculator {
         pr.setEmployeeName(emp.getFullName());
         pr.setMonth(month);
 
-        double monthlyBasic = emp.getBasicSalary(); // assume Basic Salary stored is MONTHLY
-        double monthlyAllowances = emp.getRiceSubsidy() + emp.getPhoneAllowance() + emp.getClothingAllowance();
+        double monthlyBasic = emp.getBasicSalary(); // stored as MONTHLY salary
+        double monthlyAllowances = emp.getRiceSubsidy()
+                + emp.getPhoneAllowance()
+                + emp.getClothingAllowance();
 
-        pr.setMonthlyBasicSalary(monthlyBasic);
-        pr.setTotalAllowancesMonthly(monthlyAllowances);
         pr.setDaysPresent(daysPresent);
         pr.setLateMinutes(lateMinutes);
 
-        // Late deduction based on hourly rate
+        // --------------------------------------------------
+        // PRORATION LOGIC (FIX)
+        // --------------------------------------------------
+        int workingDaysInMonth = countWeekdaysInMonth(month);
+        if (workingDaysInMonth <= 0) workingDaysInMonth = 22; // safety fallback
+
+        double prorationFactor = (double) daysPresent / workingDaysInMonth;
+        if (prorationFactor < 0) prorationFactor = 0;
+        if (prorationFactor > 1) prorationFactor = 1;
+
+        double earnedBasic = monthlyBasic * prorationFactor;
+        double earnedAllowances = monthlyAllowances * prorationFactor;
+
+        pr.setMonthlyBasicSalary(round2(earnedBasic));
+        pr.setTotalAllowancesMonthly(round2(earnedAllowances));
+
+        // --------------------------------------------------
+        // LATE DEDUCTION
+        // --------------------------------------------------
         double hourlyRate = emp.getHourlyRate();
         double lateDeduction = (lateMinutes / 60.0) * hourlyRate;
+
+        double earnedBeforeLate = earnedBasic + earnedAllowances;
+        if (lateDeduction > earnedBeforeLate) {
+            lateDeduction = earnedBeforeLate;
+        }
+
         pr.setLateDeduction(round2(lateDeduction));
 
-        // Gross pay (monthly): basic + allowances - late
-        double grossPay = (monthlyBasic + monthlyAllowances) - lateDeduction;
+        // --------------------------------------------------
+        // GROSS PAY (PRORATED)
+        // --------------------------------------------------
+        double grossPay = earnedBeforeLate - lateDeduction;
         if (grossPay < 0) grossPay = 0;
         pr.setGrossPay(round2(grossPay));
 
-        // Government deductions (use MONTHLY BASIC salary as base, common in schedules)
-        double sss = computeSSS(monthlyBasic);
-        double philHealthEmployeeShare = computePhilHealthEmployeeShare(monthlyBasic);
-        double pagIbigEmployee = computePagIbigEmployeeShare(monthlyBasic);
+        // --------------------------------------------------
+        // GOVERNMENT DEDUCTIONS (BASED ON EARNED BASIC)
+        // --------------------------------------------------
+        double sss = computeSSS(earnedBasic);
+        double philHealth = computePhilHealthEmployeeShare(earnedBasic);
+        double pagIbig = computePagIbigEmployeeShare(earnedBasic);
 
         pr.setSss(round2(sss));
-        pr.setPhilHealth(round2(philHealthEmployeeShare));
-        pr.setPagIbig(round2(pagIbigEmployee));
+        pr.setPhilHealth(round2(philHealth));
+        pr.setPagIbig(round2(pagIbig));
 
-        double totalBeforeTax = sss + philHealthEmployeeShare + pagIbigEmployee;
-        pr.setTotalDeductionsBeforeTax(round2(totalBeforeTax));
+        double totalGov = sss + philHealth + pagIbig;
+        pr.setTotalDeductionsBeforeTax(round2(totalGov));
 
-        // Taxable income = Salary - gov deductions (your note: tax computed after deductions)
-        double taxable = monthlyBasic - totalBeforeTax;
-        if (taxable < 0) taxable = 0;
-        pr.setTaxableIncome(round2(taxable));
+        // --------------------------------------------------
+        // TAX
+        // --------------------------------------------------
+        double taxableIncome = grossPay - totalGov;
+        if (taxableIncome < 0) taxableIncome = 0;
+        pr.setTaxableIncome(round2(taxableIncome));
 
-        double withholdingTax = computeWithholdingTax(taxable);
+        double withholdingTax = computeWithholdingTax(taxableIncome);
         pr.setWithholdingTax(round2(withholdingTax));
 
-        // Net pay = Gross Pay - gov deductions - withholding tax
-        double net = grossPay - totalBeforeTax - withholdingTax;
-        pr.setNetPay(round2(Math.max(net, 0)));
+        // --------------------------------------------------
+        // NET PAY
+        // --------------------------------------------------
+        double netPay = grossPay - totalGov - withholdingTax;
+        if (netPay < 0) netPay = 0;
+        pr.setNetPay(round2(netPay));
 
         return pr;
     }
 
-    // ------------------ SSS (your table) ------------------
+    // --------------------------------------------------
+    // COUNT WEEKDAYS (Mon–Fri) IN A MONTH
+    // --------------------------------------------------
+    private static int countWeekdaysInMonth(YearMonth ym) {
+        int count = 0;
+        for (int day = 1; day <= ym.lengthOfMonth(); day++) {
+            DayOfWeek dow = ym.atDay(day).getDayOfWeek();
+            if (dow != DayOfWeek.SATURDAY && dow != DayOfWeek.SUNDAY) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    // ------------------ SSS ------------------
     public static double computeSSS(double monthlyCompensation) {
         double c = monthlyCompensation;
 
         if (c < 3250) return 135.00;
 
-        // Each range is 500 wide after 3250 up to 24750+, with increments of 22.50
-        // We'll implement it exactly as discrete brackets to match your schedule.
         if (c >= 3250 && c < 3750) return 157.50;
         if (c >= 3750 && c < 4250) return 180.00;
         if (c >= 4250 && c < 4750) return 202.50;
@@ -110,60 +156,39 @@ public class PayrollCalculator {
         if (c >= 23750 && c < 24250) return 1080.00;
         if (c >= 24250 && c < 24750) return 1102.50;
 
-        // 24,750 - Over
         return 1125.00;
     }
 
-    // ------------------ PhilHealth (your notes) ------------------
-    // Premium rate: 3%, min 300, max 1800 monthly premium
-    // Employee share is 50%
+    // ------------------ PhilHealth ------------------
     public static double computePhilHealthEmployeeShare(double monthlyBasicSalary) {
         double premium = monthlyBasicSalary * 0.03;
 
         if (monthlyBasicSalary <= 10000) premium = 300;
         if (monthlyBasicSalary >= 60000) premium = 1800;
 
-        // Also clamp 300..1800 for mid-range just in case
         if (premium < 300) premium = 300;
         if (premium > 1800) premium = 1800;
 
         return premium * 0.5;
     }
 
-    // ------------------ Pag-IBIG (your table) ------------------
-    // At least 1000 to 1500: 1% employee
-    // Over 1500: 2% employee
+    // ------------------ Pag-IBIG ------------------
     public static double computePagIbigEmployeeShare(double monthlyBasicSalary) {
         if (monthlyBasicSalary <= 0) return 0;
-
         double rate = (monthlyBasicSalary <= 1500) ? 0.01 : 0.02;
         return monthlyBasicSalary * rate;
     }
 
-    // ------------------ Withholding Tax (your table) ------------------
-    // Input is TAXABLE INCOME (salary - gov deductions)
+    // ------------------ Withholding Tax ------------------
     public static double computeWithholdingTax(double taxableMonthlyIncome) {
         double x = taxableMonthlyIncome;
 
         if (x <= 20832) return 0;
+        if (x < 33333) return (x - 20833) * 0.20;
+        if (x < 66667) return 2500 + (x - 33333) * 0.25;
+        if (x < 166667) return 10833 + (x - 66667) * 0.30;
+        if (x < 666667) return 40833.33 + (x - 166667) * 0.32;
 
-        if (x >= 20833 && x < 33333) {
-            return (x - 20833) * 0.20;
-        }
-
-        if (x >= 33333 && x < 66667) {
-            return 2500 + (x - 33333) * 0.25;
-        }
-
-        if (x >= 66667 && x < 166667) {
-            return 10833 + (x - 66667) * 0.30;
-        }
-
-        if (x >= 166667 && x < 666667) {
-            return 40833.33 + (x - 166667) * 0.32;
-        }
-
-        // 666,667 and above
         return 200833.33 + (x - 666667) * 0.35;
     }
 

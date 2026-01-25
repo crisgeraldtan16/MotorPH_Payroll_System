@@ -1017,6 +1017,34 @@ public class PayrollPanel extends JPanel {
         AttendanceUtil.AttendanceSummary summary =
                 AttendanceUtil.summarizeForEmployeeMonth(emp.getEmployeeNumber(), ym);
 
+        // ✅ NEW RULE: if there is NO attendance, DO NOT compute salary
+        if (summary.daysPresent == 0) {
+            lastRecord = null;
+            lastEmployee = null;
+
+            clearComputeView();
+            clearMonthlySummary();
+
+            warnLabel.setText("No attendance found for this employee in " + ym + ". Add a timecard record first.");
+            warnLabel.setForeground(PILL_WARN_FG);
+            setStatus("NO ATTENDANCE", PILL_WARN_BG, PILL_WARN_FG);
+
+            payslipArea.setText(
+                    "No attendance found for this employee in " + ym + ".\n" +
+                            "Please add a timecard record in the Timecard tab, then compute again.\n"
+            );
+            payslipArea.setCaretPosition(0);
+
+            if (saveRecordBtn != null) saveRecordBtn.setEnabled(false);
+
+            // Refresh timecard view (shows empty if none)
+            refreshTimecard(emp.getEmployeeNumber(), ym);
+
+            tabs.setSelectedIndex(0);
+            return;
+        }
+
+        // ✅ Only compute if attendance EXISTS
         PayrollRecord pr = PayrollCalculator.computeMonthlyPayroll(
                 emp, ym, summary.daysPresent, summary.totalLateMinutes
         );
@@ -1024,17 +1052,11 @@ public class PayrollPanel extends JPanel {
         lastRecord = pr;
         lastEmployee = emp;
 
-        saveRecordBtn.setEnabled(true);
+        if (saveRecordBtn != null) saveRecordBtn.setEnabled(true);
 
-        if (summary.daysPresent == 0) {
-            warnLabel.setText("Warning: No attendance entries found for this employee in " + ym + ".");
-            warnLabel.setForeground(PILL_WARN_FG);
-            setStatus("NO ATTENDANCE", PILL_WARN_BG, PILL_WARN_FG);
-        } else {
-            warnLabel.setText("Computed successfully. You can Save Record or view Payslip.");
-            warnLabel.setForeground(PILL_OK_FG);
-            setStatus("COMPUTED", PILL_OK_BG, PILL_OK_FG);
-        }
+        warnLabel.setText("Computed successfully. You can Save Record or view Payslip.");
+        warnLabel.setForeground(PILL_OK_FG);
+        setStatus("COMPUTED", PILL_OK_BG, PILL_OK_FG);
 
         updateComputeView(pr, emp);
         payslipArea.setText(formatPayslip(pr, emp));
@@ -1044,6 +1066,7 @@ public class PayrollPanel extends JPanel {
 
         tabs.setSelectedIndex(0);
     }
+
 
     private void computeAllEmployeesForMonth() {
         YearMonth ym = getSelectedMonth();

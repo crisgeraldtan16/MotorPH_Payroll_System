@@ -18,7 +18,8 @@ Employee #,Last Name,First Name,Date,Log In,Log Out
 10001,Garcia,Manuel III,06/25/2024,09:52,17:12
 10001,Garcia,Manuel III,06/26/2024,08:23,18:51
 10001,Garcia,Manuel III,06/27/2024,08:46,16:09
-10001,Garcia,Manuel III,06/28/2024,09:07,18:28
+10001,Garcia,Manuel III,06/28/2024,08:00,18:28
+10001,Garcia,Manuel III,06/29/2024,08:00,18:00
 10001,Garcia,Manuel III,07/01/2024,09:15,19:17
 10001,Garcia,Manuel III,07/02/2024,09:33,19:06
 10001,Garcia,Manuel III,07/03/2024,10:43,19:29
@@ -5167,4 +5168,4 @@ Employee #,Last Name,First Name,Date,Log In,Log Out
 10034,Santos,Beatriz,12/27/2024,09:13,18:09
 10034,Santos,Beatriz,12/30/2024,08:21,17:06
 10034,Santos,Beatriz,12/31/2024,08:05,15:48
-10001,Garcia,Manuel III,06/28/2024,08:00,18:28
+10001,Garcia,Manuel III,05/30/2024,08:00,18:00
