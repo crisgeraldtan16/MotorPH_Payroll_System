@@ -1,4 +1,5 @@
 Employee #,Last Name,First Name,Date,Log In,Log Out
+10001,Garcia,Manuel III,05/30/2024,08:00,18:00
 10001,Garcia,Manuel III,06/03/2024,08:59,18:31
 10001,Garcia,Manuel III,06/04/2024,09:47,19:07
 10001,Garcia,Manuel III,06/05/2024,10:57,21:32
@@ -5168,4 +5169,3 @@ Employee #,Last Name,First Name,Date,Log In,Log Out
 10034,Santos,Beatriz,12/27/2024,09:13,18:09
 10034,Santos,Beatriz,12/30/2024,08:21,17:06
 10034,Santos,Beatriz,12/31/2024,08:05,15:48
-10001,Garcia,Manuel III,05/30/2024,08:00,18:00

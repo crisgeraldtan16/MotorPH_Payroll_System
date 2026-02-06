@@ -18,22 +18,43 @@ public class CSVUtil {
     // ---------------- USERS ----------------
     public static List<User> loadUsers() {
         List<User> users = new ArrayList<>();
-        File file = new File(USER_FILE);
+
+        File file = new File("data/users.csv");
         if (!file.exists()) return users;
 
         try (BufferedReader br = new BufferedReader(new FileReader(file))) {
             String line;
+            boolean first = true;
+
             while ((line = br.readLine()) != null) {
-                String[] data = line.split(",");
-                if (data.length == 3) {
-                    users.add(new User(data[0].trim(), data[1].trim(), data[2].trim()));
+                if (first) { first = false; continue; } // skip header
+                if (line.trim().isEmpty()) continue;
+
+                String[] p = line.split(",", -1);
+
+                String username = p.length > 0 ? p[0].trim() : "";
+                String password = p.length > 1 ? p[1].trim() : "";
+                String roleText = p.length > 2 ? p[2].trim().toUpperCase() : "EMPLOYEE";
+                String employeeNumber = p.length > 3 ? p[3].trim() : "";
+
+                if (username.isEmpty() || password.isEmpty()) continue;
+
+                User.Role role;
+                try {
+                    role = User.Role.valueOf(roleText);
+                } catch (Exception ex) {
+                    role = User.Role.EMPLOYEE;
                 }
+
+                users.add(new User(username, password, role, employeeNumber));
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
+
         return users;
     }
+
 
     // ------------- EMPLOYEES --------------
     public static List<Employee> loadEmployees() {

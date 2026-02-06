@@ -1,2 +1,5 @@
-admin,admin123,ADMIN
-staff,staff123,STAFF
+Username,Password,Role,Employee #
+admin,admin123,ADMIN,
+hr1,hr123,HR,
+emp10001,pass123,EMPLOYEE,10001
+emp10002,pass123,EMPLOYEE,10002

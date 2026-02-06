@@ -2,6 +2,7 @@ package motorph.ui;
 
 import motorph.model.User;
 import motorph.util.CSVUtil;
+import motorph.util.Session;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -172,10 +173,20 @@ public class LoginPanel extends JPanel {
             if (user.getUsername().equals(username)
                     && user.getPassword().equals(password)) {
 
-                // Optional: remove the success popup for smoother UX
-                // JOptionPane.showMessageDialog(this, "Login successful!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                // EMPLOYEE must be linked to Employee #
+                if (user.isEmployee() && (user.getEmployeeNumber() == null || user.getEmployeeNumber().isBlank())) {
+                    JOptionPane.showMessageDialog(
+                            this,
+                            "This EMPLOYEE account has no Employee # linked.\nPlease update users.csv.",
+                            "Login Blocked",
+                            JOptionPane.ERROR_MESSAGE
+                    );
+                    return;
+                }
 
-                // Clear fields after success (nice UX)
+                // Store session so the menu + access control works
+                Session.setCurrentUser(user);
+
                 usernameField.setText("");
                 passwordField.setText("");
 

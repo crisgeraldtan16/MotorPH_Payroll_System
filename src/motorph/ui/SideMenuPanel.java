@@ -1,5 +1,8 @@
 package motorph.ui;
 
+import motorph.model.User;
+import motorph.util.Session;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
@@ -8,7 +11,7 @@ import java.awt.event.MouseEvent;
 
 public class SideMenuPanel extends JPanel {
 
-    // 🌤 LIGHTER MODERN THEME
+    // 🌤 LIGHTER MODERN THEME (same as your original)
     private static final Color BG = new Color(235, 238, 245);        // light gray-blue
     private static final Color BTN_BG = new Color(255, 255, 255);   // white
     private static final Color BTN_HOVER = new Color(225, 230, 240);
@@ -17,9 +20,16 @@ public class SideMenuPanel extends JPanel {
     private static final Color TEXT = new Color(35, 45, 65);
     private static final Color TEXT_MUTED = new Color(110, 120, 145);
 
+    // Buttons
     private JButton dashboardBtn;
     private JButton employeeBtn;
     private JButton payrollBtn;
+
+    private JButton myPayslipBtn;
+    private JButton requestLeaveBtn;
+
+    private JButton leaveApprovalsBtn;
+
     private JButton logoutBtn;
 
     public SideMenuPanel(MainFrame mainFrame) {
@@ -32,7 +42,15 @@ public class SideMenuPanel extends JPanel {
         add(buildMenu(mainFrame), BorderLayout.CENTER);
         add(buildLogout(mainFrame), BorderLayout.SOUTH);
 
-        setActive(dashboardBtn); // default
+        // Default highlight depends on role
+        User u = Session.getCurrentUser();
+        if (u != null && u.isEmployee()) {
+            setActive(myPayslipBtn);
+            mainFrame.showContent("MY_PAYSLIP");
+        } else {
+            setActive(dashboardBtn);
+            mainFrame.showContent("DASHBOARD");
+        }
     }
 
     // ---------- Header ----------
@@ -58,11 +76,20 @@ public class SideMenuPanel extends JPanel {
         subtitle.setFont(new Font("Arial", Font.PLAIN, 12));
         subtitle.setForeground(TEXT_MUTED);
 
+        // show role (small, modern)
+        User u = Session.getCurrentUser();
+        String roleTxt = (u == null) ? "-" : u.getRole().name();
+        JLabel roleLabel = new JLabel("Role: " + roleTxt);
+        roleLabel.setFont(new Font("Arial", Font.PLAIN, 11));
+        roleLabel.setForeground(TEXT_MUTED);
+
         JPanel textBox = new JPanel();
         textBox.setOpaque(false);
         textBox.setLayout(new BoxLayout(textBox, BoxLayout.Y_AXIS));
         textBox.add(title);
         textBox.add(subtitle);
+        textBox.add(Box.createVerticalStrut(4));
+        textBox.add(roleLabel);
 
         JPanel left = new JPanel();
         left.setOpaque(false);
@@ -86,30 +113,69 @@ public class SideMenuPanel extends JPanel {
         menu.setOpaque(false);
         menu.setLayout(new BoxLayout(menu, BoxLayout.Y_AXIS));
 
-        dashboardBtn = createMenuButton("Dashboard");
-        employeeBtn = createMenuButton("Employees");
-        payrollBtn = createMenuButton("Payroll");
+        User u = Session.getCurrentUser();
+        boolean isEmployee = (u != null && u.isEmployee());
+        boolean isAdminOrHr = (u != null && (u.isAdmin() || u.isHr()));
 
-        dashboardBtn.addActionListener(e -> {
-            setActive(dashboardBtn);
-            mainFrame.showContent("DASHBOARD");
-        });
+        if (isEmployee) {
+            // EMPLOYEE menu
+            myPayslipBtn = createMenuButton("My Payslip");
+            requestLeaveBtn = createMenuButton("Request Leave");
 
-        employeeBtn.addActionListener(e -> {
-            setActive(employeeBtn);
-            mainFrame.showContent("EMPLOYEE");
-        });
+            myPayslipBtn.addActionListener(e -> {
+                setActive(myPayslipBtn);
+                mainFrame.showContent("MY_PAYSLIP");
+            });
 
-        payrollBtn.addActionListener(e -> {
-            setActive(payrollBtn);
-            mainFrame.showContent("PAYROLL");
-        });
+            requestLeaveBtn.addActionListener(e -> {
+                setActive(requestLeaveBtn);
+                mainFrame.showContent("LEAVE_REQUEST");
+            });
 
-        menu.add(dashboardBtn);
-        menu.add(Box.createVerticalStrut(10));
-        menu.add(employeeBtn);
-        menu.add(Box.createVerticalStrut(10));
-        menu.add(payrollBtn);
+            menu.add(myPayslipBtn);
+            menu.add(Box.createVerticalStrut(10));
+            menu.add(requestLeaveBtn);
+
+        } else {
+            // ADMIN/HR menu (full)
+            dashboardBtn = createMenuButton("Dashboard");
+            employeeBtn = createMenuButton("Employees");
+            payrollBtn = createMenuButton("Payroll");
+
+            dashboardBtn.addActionListener(e -> {
+                setActive(dashboardBtn);
+                mainFrame.showContent("DASHBOARD");
+            });
+
+            employeeBtn.addActionListener(e -> {
+                setActive(employeeBtn);
+                mainFrame.showContent("EMPLOYEE");
+            });
+
+            payrollBtn.addActionListener(e -> {
+                setActive(payrollBtn);
+                mainFrame.showContent("PAYROLL");
+            });
+
+            menu.add(dashboardBtn);
+            menu.add(Box.createVerticalStrut(10));
+            menu.add(employeeBtn);
+            menu.add(Box.createVerticalStrut(10));
+            menu.add(payrollBtn);
+
+            // HR/Admin can approve leave
+            if (isAdminOrHr) {
+                menu.add(Box.createVerticalStrut(10));
+                leaveApprovalsBtn = createMenuButton("Leave Approvals");
+
+                leaveApprovalsBtn.addActionListener(e -> {
+                    setActive(leaveApprovalsBtn);
+                    mainFrame.showContent("LEAVE_APPROVAL");
+                });
+
+                menu.add(leaveApprovalsBtn);
+            }
+        }
 
         return menu;
     }
@@ -131,6 +197,7 @@ public class SideMenuPanel extends JPanel {
                     JOptionPane.YES_NO_OPTION
             );
             if (confirm == JOptionPane.YES_OPTION) {
+                Session.clear();
                 mainFrame.logout();
             }
         });
@@ -197,20 +264,28 @@ public class SideMenuPanel extends JPanel {
 
     // ---------- Active State ----------
     private void setActive(JButton activeBtn) {
-        JButton[] all = {dashboardBtn, employeeBtn, payrollBtn};
+        // Collect all possible menu buttons (some may be null depending on role)
+        JButton[] all = {
+                dashboardBtn, employeeBtn, payrollBtn,
+                myPayslipBtn, requestLeaveBtn, leaveApprovalsBtn
+        };
 
         for (JButton b : all) {
+            if (b == null) continue;
             b.putClientProperty("active", false);
             b.setBackground(BTN_BG);
             b.setForeground(TEXT);
         }
 
-        activeBtn.putClientProperty("active", true);
-        activeBtn.setBackground(BTN_ACTIVE);
-        activeBtn.setForeground(Color.WHITE);
+        if (activeBtn != null) {
+            activeBtn.putClientProperty("active", true);
+            activeBtn.setBackground(BTN_ACTIVE);
+            activeBtn.setForeground(Color.WHITE);
+        }
     }
 
     private boolean isActive(JButton btn) {
+        if (btn == null) return false;
         Object v = btn.getClientProperty("active");
         return v instanceof Boolean && (Boolean) v;
     }
