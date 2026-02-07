@@ -5,6 +5,7 @@ import motorph.model.PayrollRecord;
 import java.io.*;
 import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 public class PayrollIOUtil {
@@ -48,6 +49,39 @@ public class PayrollIOUtil {
         return out;
     }
 
+    // ✅ ADDED METHOD (FIXES YOUR ERROR)
+    // Returns the most recent payroll record for an employee
+    public static PayrollRecord findLatestForEmployee(String empNo) {
+        ensureFile();
+
+        List<PayrollRecord> records = new ArrayList<>();
+
+        try (BufferedReader br = new BufferedReader(new FileReader(PATH))) {
+            String line;
+            boolean first = true;
+
+            while ((line = br.readLine()) != null) {
+                if (first) { first = false; continue; }
+                if (line.trim().isEmpty()) continue;
+
+                String[] p = line.split(",", -1);
+                if (!empNo.equals(get(p, 0))) continue;
+
+                records.add(fromCsv(p));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        // No payroll yet
+        if (records.isEmpty()) return null;
+
+        // Get latest by YearMonth
+        return records.stream()
+                .max(Comparator.comparing(PayrollRecord::getMonth))
+                .orElse(null);
+    }
+
     public static String formatPayslipText(PayrollRecord pr) {
         StringBuilder sb = new StringBuilder();
         sb.append("=========== MOTORPH PAYSLIP (Monthly) ===========\n");
@@ -84,8 +118,6 @@ public class PayrollIOUtil {
 
     // ---------------- CSV ----------------
     private static String toCsv(PayrollRecord pr) {
-        // employeeNo, employeeName, month(yyyy-MM), daysPresent, lateMinutes, lateDeduction, basicEarned, allowancesEarned,
-        // grossPay, sss, philHealth, pagibig, totalGov, taxableIncome, tax, netPay
         return csv(
                 pr.getEmployeeNumber(),
                 pr.getEmployeeName(),
@@ -173,3 +205,4 @@ public class PayrollIOUtil {
         return String.format("%,.2f", v);
     }
 }
+

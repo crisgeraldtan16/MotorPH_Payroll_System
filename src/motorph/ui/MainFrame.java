@@ -37,17 +37,16 @@ public class MainFrame extends JFrame {
         contentCards = new JPanel(contentLayout);
         contentCards.setBackground(new Color(245, 247, 252));
 
-        // Screens (all in one JFrame via CardLayout)
+        // Admin/HR screens
         contentCards.add(new DashboardPanel(), "DASHBOARD");
         contentCards.add(new EmployeePanel(this), "EMPLOYEE");
         contentCards.add(new PayrollPanel(this), "PAYROLL");
+        contentCards.add(new LeaveApprovalPanel(), "LEAVE_APPROVAL");
 
         // Employee portal screens
+        contentCards.add(new EmployeeDashboardPanel(), "EMPLOYEE_DASHBOARD");
         contentCards.add(new MyPayslipPanel(), "MY_PAYSLIP");
         contentCards.add(new LeaveRequestPanel(), "LEAVE_REQUEST");
-
-        // Admin/HR screen
-        contentCards.add(new LeaveApprovalPanel(), "LEAVE_APPROVAL");
 
         appShell.add(contentCards, BorderLayout.CENTER);
         return appShell;
@@ -55,7 +54,7 @@ public class MainFrame extends JFrame {
 
     /**
      * Rebuild sidebar + show APP shell after login.
-     * Employee will land on MY_PAYSLIP, Admin/HR will land on DASHBOARD.
+     * Employee will land on EMPLOYEE_DASHBOARD, Admin/HR will land on DASHBOARD.
      */
     public void showMainApp() {
         buildMainAppUI();
@@ -63,7 +62,7 @@ public class MainFrame extends JFrame {
 
         User u = Session.getCurrentUser();
         if (u != null && u.isEmployee()) {
-            showContent("MY_PAYSLIP");
+            showContent("EMPLOYEE_DASHBOARD");
         } else {
             showContent("DASHBOARD");
         }
@@ -101,17 +100,20 @@ public class MainFrame extends JFrame {
             return;
         }
 
-        // Hard access control:
-        // Employees can ONLY open MY_PAYSLIP and LEAVE_REQUEST.
+        // Employees can ONLY open employee screens
         if (u.isEmployee()) {
-            if (!screen.equals("MY_PAYSLIP") && !screen.equals("LEAVE_REQUEST")) {
-                screen = "MY_PAYSLIP"; // force back instead of showing dashboard
+            if (!screen.equals("EMPLOYEE_DASHBOARD")
+                    && !screen.equals("MY_PAYSLIP")
+                    && !screen.equals("LEAVE_REQUEST")) {
+                screen = "EMPLOYEE_DASHBOARD";
             }
         }
 
-        // Admin/HR can open everything, but block employee-only pages
+        // Admin/HR can open everything, but block employee-only screens
         if (u.isAdmin() || u.isHr()) {
-            if (screen.equals("MY_PAYSLIP") || screen.equals("LEAVE_REQUEST")) {
+            if (screen.equals("EMPLOYEE_DASHBOARD")
+                    || screen.equals("MY_PAYSLIP")
+                    || screen.equals("LEAVE_REQUEST")) {
                 screen = "DASHBOARD";
             }
         }

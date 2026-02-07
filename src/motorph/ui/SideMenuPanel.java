@@ -11,7 +11,7 @@ import java.awt.event.MouseEvent;
 
 public class SideMenuPanel extends JPanel {
 
-    // 🌤 LIGHTER MODERN THEME (same as your original)
+    // 🌤 LIGHTER MODERN THEME
     private static final Color BG = new Color(235, 238, 245);        // light gray-blue
     private static final Color BTN_BG = new Color(255, 255, 255);   // white
     private static final Color BTN_HOVER = new Color(225, 230, 240);
@@ -20,15 +20,16 @@ public class SideMenuPanel extends JPanel {
     private static final Color TEXT = new Color(35, 45, 65);
     private static final Color TEXT_MUTED = new Color(110, 120, 145);
 
-    // Buttons
+    // Admin/HR buttons
     private JButton dashboardBtn;
     private JButton employeeBtn;
     private JButton payrollBtn;
+    private JButton leaveApprovalsBtn;
 
+    // Employee buttons
+    private JButton empDashboardBtn;
     private JButton myPayslipBtn;
     private JButton requestLeaveBtn;
-
-    private JButton leaveApprovalsBtn;
 
     private JButton logoutBtn;
 
@@ -45,8 +46,8 @@ public class SideMenuPanel extends JPanel {
         // Default highlight depends on role
         User u = Session.getCurrentUser();
         if (u != null && u.isEmployee()) {
-            setActive(myPayslipBtn);
-            mainFrame.showContent("MY_PAYSLIP");
+            setActive(empDashboardBtn);
+            mainFrame.showContent("EMPLOYEE_DASHBOARD");
         } else {
             setActive(dashboardBtn);
             mainFrame.showContent("DASHBOARD");
@@ -76,7 +77,7 @@ public class SideMenuPanel extends JPanel {
         subtitle.setFont(new Font("Arial", Font.PLAIN, 12));
         subtitle.setForeground(TEXT_MUTED);
 
-        // show role (small, modern)
+        // show role
         User u = Session.getCurrentUser();
         String roleTxt = (u == null) ? "-" : u.getRole().name();
         JLabel roleLabel = new JLabel("Role: " + roleTxt);
@@ -118,9 +119,15 @@ public class SideMenuPanel extends JPanel {
         boolean isAdminOrHr = (u != null && (u.isAdmin() || u.isHr()));
 
         if (isEmployee) {
-            // EMPLOYEE menu
+            // ✅ EMPLOYEE menu (includes Employee Dashboard)
+            empDashboardBtn = createMenuButton("Employee Dashboard");
             myPayslipBtn = createMenuButton("My Payslip");
             requestLeaveBtn = createMenuButton("Request Leave");
+
+            empDashboardBtn.addActionListener(e -> {
+                setActive(empDashboardBtn);
+                mainFrame.showContent("EMPLOYEE_DASHBOARD");
+            });
 
             myPayslipBtn.addActionListener(e -> {
                 setActive(myPayslipBtn);
@@ -132,12 +139,14 @@ public class SideMenuPanel extends JPanel {
                 mainFrame.showContent("LEAVE_REQUEST");
             });
 
+            menu.add(empDashboardBtn);
+            menu.add(Box.createVerticalStrut(10));
             menu.add(myPayslipBtn);
             menu.add(Box.createVerticalStrut(10));
             menu.add(requestLeaveBtn);
 
         } else {
-            // ADMIN/HR menu (full)
+            // ADMIN/HR menu
             dashboardBtn = createMenuButton("Dashboard");
             employeeBtn = createMenuButton("Employees");
             payrollBtn = createMenuButton("Payroll");
@@ -264,10 +273,11 @@ public class SideMenuPanel extends JPanel {
 
     // ---------- Active State ----------
     private void setActive(JButton activeBtn) {
-        // Collect all possible menu buttons (some may be null depending on role)
         JButton[] all = {
-                dashboardBtn, employeeBtn, payrollBtn,
-                myPayslipBtn, requestLeaveBtn, leaveApprovalsBtn
+                // Admin/HR
+                dashboardBtn, employeeBtn, payrollBtn, leaveApprovalsBtn,
+                // Employee
+                empDashboardBtn, myPayslipBtn, requestLeaveBtn
         };
 
         for (JButton b : all) {

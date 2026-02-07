@@ -55,7 +55,6 @@ public class CSVUtil {
         return users;
     }
 
-
     // ------------- EMPLOYEES --------------
     public static List<Employee> loadEmployees() {
         ensureEmployeeFileExists();
@@ -145,6 +144,18 @@ public class CSVUtil {
         return String.valueOf(max + 1);
     }
 
+    // ✅ Added helper for Employee Dashboard (and other screens)
+    public static Employee findEmployeeByNumber(String empNo) {
+        if (empNo == null) return null;
+
+        List<Employee> employees = loadEmployees();
+        for (Employee e : employees) {
+            if (empNo.equals(e.getEmployeeNumber())) {
+                return e;
+            }
+        }
+        return null;
+    }
 
     private static String toEmployeeCsvRow(Employee e) {
         // Keep the same order as the required CSV header
@@ -208,3 +219,4 @@ public class CSVUtil {
         }
     }
 }
+
