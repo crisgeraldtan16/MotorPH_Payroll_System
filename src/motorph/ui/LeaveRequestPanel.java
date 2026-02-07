@@ -12,6 +12,7 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
@@ -25,10 +26,17 @@ public class LeaveRequestPanel extends JPanel {
 
     private final DateTimeFormatter DF = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-    private JTextField fromField;
-    private JTextField toField;
-    private JTextArea reasonArea;
+    // ✅ Date dropdowns (From)
+    private JComboBox<Integer> fromYear;
+    private JComboBox<Integer> fromMonth;
+    private JComboBox<Integer> fromDay;
 
+    // ✅ Date dropdowns (To)
+    private JComboBox<Integer> toYear;
+    private JComboBox<Integer> toMonth;
+    private JComboBox<Integer> toDay;
+
+    private JTextArea reasonArea;
     private DefaultTableModel model;
 
     public LeaveRequestPanel() {
@@ -73,7 +81,7 @@ public class LeaveRequestPanel extends JPanel {
     private JComponent body() {
         JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT, formCard(), tableCard());
         split.setResizeWeight(0.40);
-        split.setDividerLocation(260);
+        split.setDividerLocation(280);
         split.setBorder(null);
         return split;
     }
@@ -93,22 +101,26 @@ public class LeaveRequestPanel extends JPanel {
         gbc.insets = new Insets(6, 6, 6, 6);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        fromField = new JTextField(16);
-        toField = new JTextField(16);
+        // ✅ Build date dropdowns
+        buildDatePickers();
+
         reasonArea = new JTextArea(4, 24);
         reasonArea.setLineWrap(true);
         reasonArea.setWrapStyleWord(true);
 
+        // FROM row
         gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0.25;
-        form.add(label("From (yyyy-MM-dd) *"), gbc);
+        form.add(label("From Date *"), gbc);
         gbc.gridx = 1; gbc.weightx = 0.75;
-        form.add(fromField, gbc);
+        form.add(dateRow(fromYear, fromMonth, fromDay), gbc);
 
+        // TO row
         gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0.25;
-        form.add(label("To (yyyy-MM-dd) *"), gbc);
+        form.add(label("To Date *"), gbc);
         gbc.gridx = 1; gbc.weightx = 0.75;
-        form.add(toField, gbc);
+        form.add(dateRow(toYear, toMonth, toDay), gbc);
 
+        // Reason row
         gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0.25;
         form.add(label("Reason *"), gbc);
         gbc.gridx = 1; gbc.weightx = 0.75;
@@ -129,6 +141,79 @@ public class LeaveRequestPanel extends JPanel {
         card.add(form, BorderLayout.CENTER);
         card.add(bottom, BorderLayout.SOUTH);
         return card;
+    }
+
+    private void buildDatePickers() {
+        // Range: 2020..2030 (you can adjust)
+        Integer[] years = new Integer[11];
+        for (int i = 0; i < years.length; i++) years[i] = 2020 + i;
+
+        Integer[] months = new Integer[12];
+        for (int i = 0; i < months.length; i++) months[i] = i + 1;
+
+        fromYear = new JComboBox<>(years);
+        fromMonth = new JComboBox<>(months);
+        fromDay = new JComboBox<>();
+
+        toYear = new JComboBox<>(years);
+        toMonth = new JComboBox<>(months);
+        toDay = new JComboBox<>();
+
+        // Default: today
+        LocalDate today = LocalDate.now();
+        setPickerDate(fromYear, fromMonth, fromDay, today);
+        setPickerDate(toYear, toMonth, toDay, today);
+
+        // Update day list whenever year/month changes
+        fromYear.addActionListener(e -> refreshDays(fromYear, fromMonth, fromDay));
+        fromMonth.addActionListener(e -> refreshDays(fromYear, fromMonth, fromDay));
+        toYear.addActionListener(e -> refreshDays(toYear, toMonth, toDay));
+        toMonth.addActionListener(e -> refreshDays(toYear, toMonth, toDay));
+
+        refreshDays(fromYear, fromMonth, fromDay);
+        refreshDays(toYear, toMonth, toDay);
+    }
+
+    private JPanel dateRow(JComboBox<Integer> y, JComboBox<Integer> m, JComboBox<Integer> d) {
+        JPanel p = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        p.setOpaque(false);
+
+        p.add(new JLabel("Year"));
+        p.add(y);
+        p.add(new JLabel("Month"));
+        p.add(m);
+        p.add(new JLabel("Day"));
+        p.add(d);
+
+        return p;
+    }
+
+    private void setPickerDate(JComboBox<Integer> y, JComboBox<Integer> m, JComboBox<Integer> d, LocalDate date) {
+        y.setSelectedItem(date.getYear());
+        m.setSelectedItem(date.getMonthValue());
+        refreshDays(y, m, d);
+        d.setSelectedItem(date.getDayOfMonth());
+    }
+
+    private void refreshDays(JComboBox<Integer> y, JComboBox<Integer> m, JComboBox<Integer> d) {
+        int year = (int) y.getSelectedItem();
+        int month = (int) m.getSelectedItem();
+
+        int currentDay = (d.getSelectedItem() == null) ? 1 : (int) d.getSelectedItem();
+
+        int maxDay = YearMonth.of(year, month).lengthOfMonth();
+        d.removeAllItems();
+        for (int day = 1; day <= maxDay; day++) d.addItem(day);
+
+        if (currentDay <= maxDay) d.setSelectedItem(currentDay);
+        else d.setSelectedItem(maxDay);
+    }
+
+    private String getPickerDate(JComboBox<Integer> y, JComboBox<Integer> m, JComboBox<Integer> d) {
+        int year = (int) y.getSelectedItem();
+        int month = (int) m.getSelectedItem();
+        int day = (int) d.getSelectedItem();
+        return LocalDate.of(year, month, day).format(DF);
     }
 
     private JComponent tableCard() {
@@ -170,17 +255,12 @@ public class LeaveRequestPanel extends JPanel {
             return;
         }
 
-        String from = fromField.getText().trim();
-        String to = toField.getText().trim();
+        String from = getPickerDate(fromYear, fromMonth, fromDay);
+        String to = getPickerDate(toYear, toMonth, toDay);
         String reason = reasonArea.getText().trim();
 
-        if (from.isEmpty() || to.isEmpty() || reason.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Please fill in all required fields.", "Validation Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        if (!isValidDate(from) || !isValidDate(to)) {
-            JOptionPane.showMessageDialog(this, "Date format must be yyyy-MM-dd (example: 2024-06-01).", "Validation Error", JOptionPane.ERROR_MESSAGE);
+        if (reason.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please enter a reason.", "Validation Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
@@ -209,8 +289,8 @@ public class LeaveRequestPanel extends JPanel {
         try {
             LeaveIOUtil.append(r);
             JOptionPane.showMessageDialog(this, "Leave request submitted.", "Submitted", JOptionPane.INFORMATION_MESSAGE);
-            fromField.setText("");
-            toField.setText("");
+
+            // Reset: keep dates today, clear reason
             reasonArea.setText("");
             refresh();
         } catch (Exception ex) {
@@ -243,11 +323,6 @@ public class LeaveRequestPanel extends JPanel {
             if (empNo.equals(e.getEmployeeNumber())) return e;
         }
         return null;
-    }
-
-    private boolean isValidDate(String s) {
-        try { LocalDate.parse(s, DF); return true; }
-        catch (Exception e) { return false; }
     }
 
     private JLabel label(String t) {

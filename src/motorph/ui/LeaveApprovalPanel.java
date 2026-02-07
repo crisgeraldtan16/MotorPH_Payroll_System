@@ -22,6 +22,12 @@ public class LeaveApprovalPanel extends JPanel {
     private DefaultTableModel model;
     private JTable table;
 
+    // Full reason viewer
+    private JTextArea reasonViewer;
+
+    // Cache loaded requests (so we can show full reason on click)
+    private List<LeaveRequest> cached;
+
     public LeaveApprovalPanel() {
         setLayout(new BorderLayout(14, 14));
         setBackground(BG);
@@ -77,9 +83,15 @@ public class LeaveApprovalPanel extends JPanel {
     }
 
     private JComponent body() {
-        JPanel card = new JPanel(new BorderLayout(10, 10));
-        card.setBackground(CARD_BG);
-        card.setBorder(BorderFactory.createCompoundBorder(
+        // Split layout: Table (top) + Full reason (bottom)
+        JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+        split.setResizeWeight(0.72);
+        split.setBorder(null);
+
+        // ---- Table card ----
+        JPanel tableCard = new JPanel(new BorderLayout(10, 10));
+        tableCard.setBackground(CARD_BG);
+        tableCard.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(BORDER),
                 new EmptyBorder(14, 14, 14, 14)
         ));
@@ -98,18 +110,70 @@ public class LeaveApprovalPanel extends JPanel {
         JScrollPane sp = new JScrollPane(table);
         sp.setBorder(BorderFactory.createLineBorder(BORDER));
 
-        card.add(sp, BorderLayout.CENTER);
-        return card;
+        tableCard.add(sp, BorderLayout.CENTER);
+
+        // When clicking/selecting a row, show full reason
+        table.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) showSelectedReason();
+        });
+
+        // ---- Reason card ----
+        JPanel reasonCard = new JPanel(new BorderLayout(10, 10));
+        reasonCard.setBackground(CARD_BG);
+        reasonCard.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(BORDER),
+                new EmptyBorder(14, 14, 14, 14)
+        ));
+
+        JLabel reasonTitle = new JLabel("Full Reason");
+        reasonTitle.setFont(new Font("Arial", Font.BOLD, 14));
+        reasonTitle.setForeground(TEXT);
+
+        JLabel reasonHint = new JLabel("Select a request above to view the full text");
+        reasonHint.setFont(new Font("Arial", Font.PLAIN, 12));
+        reasonHint.setForeground(MUTED);
+
+        JPanel reasonTop = new JPanel();
+        reasonTop.setOpaque(false);
+        reasonTop.setLayout(new BoxLayout(reasonTop, BoxLayout.Y_AXIS));
+        reasonTop.add(reasonTitle);
+        reasonTop.add(Box.createVerticalStrut(4));
+        reasonTop.add(reasonHint);
+
+        reasonViewer = new JTextArea();
+        reasonViewer.setEditable(false);
+        reasonViewer.setLineWrap(true);
+        reasonViewer.setWrapStyleWord(true);
+        reasonViewer.setFont(new Font("Arial", Font.PLAIN, 13));
+        reasonViewer.setText("Select a request to view the full reason.");
+
+        JScrollPane reasonSp = new JScrollPane(reasonViewer);
+        reasonSp.setBorder(BorderFactory.createLineBorder(BORDER));
+
+        reasonCard.add(reasonTop, BorderLayout.NORTH);
+        reasonCard.add(reasonSp, BorderLayout.CENTER);
+
+        split.setTopComponent(tableCard);
+        split.setBottomComponent(reasonCard);
+        split.setDividerLocation(420);
+
+        return split;
     }
 
     private void refresh() {
         model.setRowCount(0);
 
+        if (reasonViewer != null) {
+            reasonViewer.setText("Select a request to view the full reason.");
+            reasonViewer.setCaretPosition(0);
+        }
+
         User u = Session.getCurrentUser();
         if (u == null || !(u.isAdmin() || u.isHr())) return;
 
-        List<LeaveRequest> all = LeaveIOUtil.loadAll();
-        for (LeaveRequest r : all) {
+        cached = LeaveIOUtil.loadAll();
+
+        for (LeaveRequest r : cached) {
             model.addRow(new Object[]{
                     r.getRequestId(),
                     r.getEmployeeNumber(),
@@ -122,6 +186,39 @@ public class LeaveApprovalPanel extends JPanel {
                     r.getReviewedBy()
             });
         }
+    }
+
+    private void showSelectedReason() {
+        if (table == null || model == null || reasonViewer == null) return;
+
+        int row = table.getSelectedRow();
+        if (row == -1) return;
+
+        String requestId = String.valueOf(model.getValueAt(row, 0));
+
+        LeaveRequest target = null;
+        if (cached != null) {
+            for (LeaveRequest r : cached) {
+                if (requestId.equals(r.getRequestId())) {
+                    target = r;
+                    break;
+                }
+            }
+        }
+
+        if (target == null) {
+            reasonViewer.setText("Request not found. Click Refresh.");
+            reasonViewer.setCaretPosition(0);
+            return;
+        }
+
+        String fullReason = target.getReason();
+        if (fullReason == null || fullReason.trim().isEmpty()) {
+            fullReason = "(No reason provided)";
+        }
+
+        reasonViewer.setText(fullReason);
+        reasonViewer.setCaretPosition(0);
     }
 
     private void updateSelected(LeaveRequest.Status newStatus) {
@@ -153,18 +250,15 @@ public class LeaveApprovalPanel extends JPanel {
             return;
         }
 
-        if (target.getStatus() != LeaveRequest.Status.PENDING) {
-            JOptionPane.showMessageDialog(this, "This request is already " + target.getStatus() + ".", "Info", JOptionPane.INFORMATION_MESSAGE);
+        LeaveRequest.Status oldStatus = target.getStatus();
+        if (oldStatus == newStatus) {
+            JOptionPane.showMessageDialog(this, "This request is already " + newStatus + ".", "Info", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
 
-        int confirm = JOptionPane.showConfirmDialog(
-                this,
-                "Set status to " + newStatus + " for " + target.getEmployeeName() + "?",
-                "Confirm",
-                JOptionPane.YES_NO_OPTION
-        );
-
+        // ✅ Allow changing mind: PENDING -> APPROVED/DENIED, or APPROVED <-> DENIED
+        String msg = "Change status from " + oldStatus + " to " + newStatus + " for " + target.getEmployeeName() + "?";
+        int confirm = JOptionPane.showConfirmDialog(this, msg, "Confirm", JOptionPane.YES_NO_OPTION);
         if (confirm != JOptionPane.YES_OPTION) return;
 
         target.setStatus(newStatus);
@@ -177,7 +271,8 @@ public class LeaveApprovalPanel extends JPanel {
 
     private String shorten(String s, int max) {
         if (s == null) return "";
-        if (s.length() <= max) return s;
-        return s.substring(0, max) + "...";
+        String t = s.trim();
+        if (t.length() <= max) return t;
+        return t.substring(0, max) + "...";
     }
 }
