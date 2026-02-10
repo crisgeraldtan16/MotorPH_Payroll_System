@@ -6,7 +6,8 @@ import motorph.model.Employee;
 import motorph.model.PayrollRecord;
 import motorph.util.AttendanceUtil;
 import motorph.util.CSVUtil;
-import motorph.util.PayrollCalculator;
+import motorph.util.DefaultPayrollService;
+import motorph.util.PayrollService;
 import motorph.util.PayrollIOUtil;
 
 import javax.swing.*;
@@ -18,7 +19,6 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 
 public class PayrollPanel extends JPanel {
@@ -43,6 +43,9 @@ public class PayrollPanel extends JPanel {
     private static final Color PILL_WARN_FG = new Color(160, 120, 30);
 
     private List<Employee> employees;
+
+    // ✅ OOP upgrade: UI depends on interface (Abstraction + Polymorphism)
+    private final PayrollService payrollService = new DefaultPayrollService();
 
     // Left selection
     private JTable employeeTable;
@@ -809,12 +812,6 @@ public class PayrollPanel extends JPanel {
 
         tcMode = TcMode.EDIT;
 
-        // Build key from selected row (for locating record in CSV)
-        YearMonth ym = getSelectedMonth();
-        List<AttendanceRecord> records = AttendanceUtil.loadRecordsForEmployeeMonth(emp.getEmployeeNumber(), ym);
-
-        // The table row index matches current displayed order, so use it safely:
-        // We'll rebuild records in the same order we display. If something changes, we still use exact values as key.
         String dateText = String.valueOf(timecardTableModel.getValueAt(viewRow, 0));
         String inText = String.valueOf(timecardTableModel.getValueAt(viewRow, 1));
         String outText = String.valueOf(timecardTableModel.getValueAt(viewRow, 2));
@@ -937,7 +934,6 @@ public class PayrollPanel extends JPanel {
                 JOptionPane.showMessageDialog(this, "Timecard record updated.", "Saved", JOptionPane.INFORMATION_MESSAGE);
             }
 
-            // Refresh timecard list and return to list view
             refreshTimecard(emp.getEmployeeNumber(), getSelectedMonth());
             timecardLayout.show(timecardView, "LIST");
 
@@ -984,7 +980,7 @@ public class PayrollPanel extends JPanel {
             totalHours += hours;
 
             timecardTableModel.addRow(new Object[]{
-                    e.getDate(),          // prints yyyy-MM-dd by default (clear and readable)
+                    e.getDate(),
                     e.getTimeIn(),
                     e.getTimeOut(),
                     late,
@@ -1014,11 +1010,10 @@ public class PayrollPanel extends JPanel {
 
         YearMonth ym = getSelectedMonth();
 
-        AttendanceUtil.AttendanceSummary summary =
-                AttendanceUtil.summarizeForEmployeeMonth(emp.getEmployeeNumber(), ym);
+        // ✅ Use service (abstraction). Service returns null when no attendance.
+        PayrollRecord pr = payrollService.computeForEmployeeMonth(emp, ym);
 
-        // ✅ NEW RULE: if there is NO attendance, DO NOT compute salary
-        if (summary.daysPresent == 0) {
+        if (pr == null) {
             lastRecord = null;
             lastEmployee = null;
 
@@ -1037,17 +1032,11 @@ public class PayrollPanel extends JPanel {
 
             if (saveRecordBtn != null) saveRecordBtn.setEnabled(false);
 
-            // Refresh timecard view (shows empty if none)
             refreshTimecard(emp.getEmployeeNumber(), ym);
 
             tabs.setSelectedIndex(0);
             return;
         }
-
-        // ✅ Only compute if attendance EXISTS
-        PayrollRecord pr = PayrollCalculator.computeMonthlyPayroll(
-                emp, ym, summary.daysPresent, summary.totalLateMinutes
-        );
 
         lastRecord = pr;
         lastEmployee = emp;
@@ -1067,7 +1056,6 @@ public class PayrollPanel extends JPanel {
         tabs.setSelectedIndex(0);
     }
 
-
     private void computeAllEmployeesForMonth() {
         YearMonth ym = getSelectedMonth();
 
@@ -1077,11 +1065,14 @@ public class PayrollPanel extends JPanel {
         double totalTax = 0;
         double totalNet = 0;
 
-        for (Employee emp : employees) {
-            AttendanceUtil.AttendanceSummary summary =
-                    AttendanceUtil.summarizeForEmployeeMonth(emp.getEmployeeNumber(), ym);
+        int computedCount = 0;
 
-            PayrollRecord pr = PayrollCalculator.computeMonthlyPayroll(emp, ym, summary.daysPresent, summary.totalLateMinutes);
+        for (Employee emp : employees) {
+            // ✅ Skip employees with no attendance for the selected month
+            PayrollRecord pr = payrollService.computeForEmployeeMonth(emp, ym);
+            if (pr == null) continue;
+
+            computedCount++;
 
             double gov = pr.getTotalDeductionsBeforeTax();
             double tax = pr.getWithholdingTax();
@@ -1102,7 +1093,7 @@ public class PayrollPanel extends JPanel {
             });
         }
 
-        monthCountVal.setText(String.valueOf(employees.size()));
+        monthCountVal.setText(String.valueOf(computedCount));
         monthTotalGovVal.setText(money(totalGov));
         monthTotalTaxVal.setText(money(totalTax));
         monthTotalNetVal.setText(money(totalNet));
@@ -1117,11 +1108,17 @@ public class PayrollPanel extends JPanel {
         }
 
         try {
-            PayrollIOUtil.appendPayrollRecord(lastRecord);
+            // ✅ save through service
+            payrollService.saveRecord(lastRecord);
+
             JOptionPane.showMessageDialog(this,
                     "Payroll record saved to: data/payroll_records.csv",
                     "Saved",
                     JOptionPane.INFORMATION_MESSAGE);
+
+            // optional: disable after saving to prevent duplicates
+            if (saveRecordBtn != null) saveRecordBtn.setEnabled(false);
+
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this,
                     "Failed to save payroll record:\n" + ex.getMessage(),
