@@ -29,7 +29,9 @@ Role-Based Access Control
 Implements different user roles:
 - Admin
 - HR
-- Employee
+- Employee (Regular and Probitionary)
+- IT
+- Finance
 
 Admin and HR can manage employees, compute payroll, and approve leave requests.
 Employees can only access their dashboard, file leave requests, and view their own payslip.
