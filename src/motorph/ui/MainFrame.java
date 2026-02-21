@@ -89,36 +89,23 @@ public class MainFrame extends JFrame {
 
     /**
      * Switches the right-side screen (content area).
-     * Includes access control so employees cannot open admin pages.
+     * ✅ Polymorphism-based access control:
+     * Role rules are inside AccessPolicy classes (u.getAccessPolicy()).
      */
     public void showContent(String screen) {
         User u = Session.getCurrentUser();
 
-        // If not logged in, go to login screen
         if (u == null) {
             rootLayout.show(root, "LOGIN");
             return;
         }
 
-        // Employees can ONLY open employee screens
-        if (u.isEmployee()) {
-            if (!screen.equals("EMPLOYEE_DASHBOARD")
-                    && !screen.equals("MY_PAYSLIP")
-                    && !screen.equals("LEAVE_REQUEST")) {
-                screen = "EMPLOYEE_DASHBOARD";
-            }
+        // ✅ Polymorphism: role rules are inside policy classes
+        if (!u.getAccessPolicy().canOpenScreen(screen)) {
+            // safe fallback per role
+            screen = u.isEmployee() ? "EMPLOYEE_DASHBOARD" : "DASHBOARD";
         }
 
-        // Admin/HR can open everything, but block employee-only screens
-        if (u.isAdmin() || u.isHr()) {
-            if (screen.equals("EMPLOYEE_DASHBOARD")
-                    || screen.equals("MY_PAYSLIP")
-                    || screen.equals("LEAVE_REQUEST")) {
-                screen = "DASHBOARD";
-            }
-        }
-
-        // Show the screen
         contentLayout.show(contentCards, screen);
     }
 
