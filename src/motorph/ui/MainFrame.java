@@ -70,27 +70,23 @@ public class MainFrame extends JFrame {
 
     /**
      * Rebuilds the left sidebar depending on role (Employee vs Admin/HR).
-     * This ensures the menu is always correct after login/logout.
      */
     private void buildMainAppUI() {
-        // remove old sidebar if any
-        Component oldWest = ((BorderLayout) appShell.getLayout()).getLayoutComponent(BorderLayout.WEST);
+        Component oldWest = ((BorderLayout) appShell.getLayout())
+                .getLayoutComponent(BorderLayout.WEST);
+
         if (oldWest != null) {
             appShell.remove(oldWest);
         }
 
-        // add new role-based sidebar
         appShell.add(new SideMenuPanel(this), BorderLayout.WEST);
-
-        // refresh UI
         appShell.revalidate();
         appShell.repaint();
     }
 
     /**
      * Switches the right-side screen (content area).
-     * ✅ Polymorphism-based access control:
-     * Role rules are inside AccessPolicy classes (u.getAccessPolicy()).
+     * ✅ Polymorphism-based access control
      */
     public void showContent(String screen) {
         User u = Session.getCurrentUser();
@@ -100,10 +96,11 @@ public class MainFrame extends JFrame {
             return;
         }
 
-        // ✅ Polymorphism: role rules are inside policy classes
+        // ✅ Polymorphism: role rules are inside AccessPolicy classes
         if (!u.getAccessPolicy().canOpenScreen(screen)) {
-            // safe fallback per role
-            screen = u.isEmployee() ? "EMPLOYEE_DASHBOARD" : "DASHBOARD";
+            screen = u.isEmployee()
+                    ? "EMPLOYEE_DASHBOARD"
+                    : "DASHBOARD";
         }
 
         contentLayout.show(contentCards, screen);

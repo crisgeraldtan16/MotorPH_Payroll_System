@@ -19,7 +19,7 @@ public class CSVUtil {
     public static List<User> loadUsers() {
         List<User> users = new ArrayList<>();
 
-        File file = new File("data/users.csv");
+        File file = new File(USER_FILE);
         if (!file.exists()) return users;
 
         try (BufferedReader br = new BufferedReader(new FileReader(file))) {
@@ -27,14 +27,14 @@ public class CSVUtil {
             boolean first = true;
 
             while ((line = br.readLine()) != null) {
-                if (first) { first = false; continue; } // skip header
+                if (first) { first = false; continue; }
                 if (line.trim().isEmpty()) continue;
 
                 String[] p = line.split(",", -1);
 
                 String username = p.length > 0 ? p[0].trim() : "";
                 String password = p.length > 1 ? p[1].trim() : "";
-                String roleText = p.length > 2 ? p[2].trim().toUpperCase() : "EMPLOYEE";
+                String roleText = p.length > 2 ? p[2].trim().toUpperCase() : "REGULAR";
                 String employeeNumber = p.length > 3 ? p[3].trim() : "";
 
                 if (username.isEmpty() || password.isEmpty()) continue;
@@ -43,7 +43,7 @@ public class CSVUtil {
                 try {
                     role = User.Role.valueOf(roleText);
                 } catch (Exception ex) {
-                    role = User.Role.EMPLOYEE;
+                    role = User.Role.REGULAR;
                 }
 
                 users.add(new User(username, password, role, employeeNumber));
@@ -65,13 +65,13 @@ public class CSVUtil {
             boolean firstLine = true;
 
             while ((line = br.readLine()) != null) {
-                if (firstLine) { // skip header
+                if (firstLine) {
                     firstLine = false;
                     continue;
                 }
                 if (line.trim().isEmpty()) continue;
 
-                String[] c = line.split(",", -1); // keep empty values
+                String[] c = line.split(",", -1);
                 if (c.length < 19) continue;
 
                 Employee e = new Employee();
@@ -121,36 +121,32 @@ public class CSVUtil {
     }
 
     public static String generateNextEmployeeNumber(List<Employee> employees) {
-        int max = 10000; // base number so first generated is 10001
+        int max = 10000;
 
         for (Employee e : employees) {
             String raw = e.getEmployeeNumber();
             if (raw == null) continue;
 
             raw = raw.trim();
-
-            // Extract numeric part only (handles "10001", "EMP-10001", etc.)
             String digits = raw.replaceAll("\\D+", "");
             if (digits.isEmpty()) continue;
 
             try {
                 int num = Integer.parseInt(digits);
-                if (num > max) {
-                    max = num;
-                }
+                if (num > max) max = num;
             } catch (NumberFormatException ignored) {}
         }
 
         return String.valueOf(max + 1);
     }
 
-    // ✅ Added helper for Employee Dashboard (and other screens)
+    // ✅ UPDATED METHOD (IMPROVED VERSION)
     public static Employee findEmployeeByNumber(String empNo) {
-        if (empNo == null) return null;
+        if (empNo == null || empNo.trim().isEmpty()) return null;
 
         List<Employee> employees = loadEmployees();
         for (Employee e : employees) {
-            if (empNo.equals(e.getEmployeeNumber())) {
+            if (empNo.trim().equals(e.getEmployeeNumber())) {
                 return e;
             }
         }
@@ -158,7 +154,6 @@ public class CSVUtil {
     }
 
     private static String toEmployeeCsvRow(Employee e) {
-        // Keep the same order as the required CSV header
         return safe(e.getEmployeeNumber()) + "," +
                 safe(e.getLastName()) + "," +
                 safe(e.getFirstName()) + "," +
@@ -198,7 +193,6 @@ public class CSVUtil {
 
     private static String safe(String s) {
         if (s == null) return "";
-        // Avoid breaking CSV by removing commas (simple academic-safe approach)
         return s.replace(",", " ").trim();
     }
 
@@ -209,14 +203,4 @@ public class CSVUtil {
             return 0.0;
         }
     }
-
-    private static int tryParseInt(String s) {
-        try {
-            if (s == null || s.trim().isEmpty()) return -1;
-            return Integer.parseInt(s.trim());
-        } catch (Exception e) {
-            return -1;
-        }
-    }
 }
-

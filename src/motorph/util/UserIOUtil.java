@@ -34,7 +34,7 @@ public class UserIOUtil {
                 try {
                     role = User.Role.valueOf(roleText);
                 } catch (Exception e) {
-                    role = User.Role.EMPLOYEE;
+                    role = User.Role.REGULAR;
                 }
 
                 users.add(new User(username, password, role, empNo));

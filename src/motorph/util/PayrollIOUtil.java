@@ -49,12 +49,11 @@ public class PayrollIOUtil {
         return out;
     }
 
-    // ✅ ADDED METHOD (FIXES YOUR ERROR)
-    // Returns the most recent payroll record for an employee
+    // ✅ ADDED (ONLY WHAT WAS MISSING)
     public static PayrollRecord findLatestForEmployee(String empNo) {
         ensureFile();
 
-        List<PayrollRecord> records = new ArrayList<>();
+        PayrollRecord latest = null;
 
         try (BufferedReader br = new BufferedReader(new FileReader(PATH))) {
             String line;
@@ -65,21 +64,26 @@ public class PayrollIOUtil {
                 if (line.trim().isEmpty()) continue;
 
                 String[] p = line.split(",", -1);
-                if (!empNo.equals(get(p, 0))) continue;
+                String eNo = get(p, 0);
+                if (!eNo.equals(empNo)) continue;
 
-                records.add(fromCsv(p));
+                PayrollRecord pr = fromCsv(p);
+
+                if (latest == null) {
+                    latest = pr;
+                } else {
+                    // compare YearMonth (latest month wins)
+                    if (pr.getMonth() != null && latest.getMonth() != null
+                            && pr.getMonth().isAfter(latest.getMonth())) {
+                        latest = pr;
+                    }
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        // No payroll yet
-        if (records.isEmpty()) return null;
-
-        // Get latest by YearMonth
-        return records.stream()
-                .max(Comparator.comparing(PayrollRecord::getMonth))
-                .orElse(null);
+        return latest;
     }
 
     public static String formatPayslipText(PayrollRecord pr) {
@@ -205,4 +209,3 @@ public class PayrollIOUtil {
         return String.format("%,.2f", v);
     }
 }
-

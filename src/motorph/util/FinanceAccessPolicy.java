@@ -2,13 +2,11 @@ package motorph.util;
 
 import java.util.Set;
 
-public class HrAccessPolicy extends BaseAccessPolicy {
+public class FinanceAccessPolicy extends BaseAccessPolicy {
 
     private static final Set<String> ALLOWED = Set.of(
             "DASHBOARD",
-            "EMPLOYEE",
-            "PAYROLL",
-            "LEAVE_APPROVAL"
+            "PAYROLL"
     );
 
     @Override
@@ -16,10 +14,6 @@ public class HrAccessPolicy extends BaseAccessPolicy {
         return ALLOWED.contains(screen);
     }
 
-    @Override public boolean canManageEmployees() { return true; }
-    @Override public boolean canApproveLeave() { return true; }
-
-    // HR can access payroll screen (depends on your rules)
     @Override public boolean canComputePayroll() { return true; }
     @Override public boolean canManageTimecard() { return true; }
 }

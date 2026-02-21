@@ -109,81 +109,98 @@ public class SideMenuPanel extends JPanel {
     }
 
     // ---------- Menu ----------
+    // ✅ UPDATED: Uses AccessPolicy so Employee Dashboard will appear when allowed
     private JComponent buildMenu(MainFrame mainFrame) {
         JPanel menu = new JPanel();
         menu.setOpaque(false);
         menu.setLayout(new BoxLayout(menu, BoxLayout.Y_AXIS));
 
         User u = Session.getCurrentUser();
-        boolean isEmployee = (u != null && u.isEmployee());
-        boolean isAdminOrHr = (u != null && (u.isAdmin() || u.isHr()));
+        if (u == null) return menu;
 
-        if (isEmployee) {
-            // ✅ EMPLOYEE menu (includes Employee Dashboard)
-            empDashboardBtn = createMenuButton("Employee Dashboard");
-            myPayslipBtn = createMenuButton("My Payslip");
-            requestLeaveBtn = createMenuButton("Request Leave");
+        // ✅ Use policy to decide what buttons show
+        boolean canEmpDash = u.getAccessPolicy().canOpenScreen("EMPLOYEE_DASHBOARD");
+        boolean canPayslip = u.getAccessPolicy().canOpenScreen("MY_PAYSLIP");
+        boolean canLeaveRequest = u.getAccessPolicy().canOpenScreen("LEAVE_REQUEST");
 
-            empDashboardBtn.addActionListener(e -> {
-                setActive(empDashboardBtn);
-                mainFrame.showContent("EMPLOYEE_DASHBOARD");
-            });
+        boolean canDashboard = u.getAccessPolicy().canOpenScreen("DASHBOARD");
+        boolean canEmployeeCrud = u.getAccessPolicy().canOpenScreen("EMPLOYEE");
+        boolean canPayroll = u.getAccessPolicy().canOpenScreen("PAYROLL");
+        boolean canLeaveApproval = u.getAccessPolicy().canOpenScreen("LEAVE_APPROVAL");
 
-            myPayslipBtn.addActionListener(e -> {
-                setActive(myPayslipBtn);
-                mainFrame.showContent("MY_PAYSLIP");
-            });
+        // EMPLOYEE-type menu
+        if (canEmpDash || canPayslip || canLeaveRequest) {
 
-            requestLeaveBtn.addActionListener(e -> {
-                setActive(requestLeaveBtn);
-                mainFrame.showContent("LEAVE_REQUEST");
-            });
+            if (canEmpDash) {
+                empDashboardBtn = createMenuButton("Employee Dashboard");
+                empDashboardBtn.addActionListener(e -> {
+                    setActive(empDashboardBtn);
+                    mainFrame.showContent("EMPLOYEE_DASHBOARD");
+                });
+                menu.add(empDashboardBtn);
+                menu.add(Box.createVerticalStrut(10));
+            }
 
-            menu.add(empDashboardBtn);
-            menu.add(Box.createVerticalStrut(10));
-            menu.add(myPayslipBtn);
-            menu.add(Box.createVerticalStrut(10));
-            menu.add(requestLeaveBtn);
+            if (canPayslip) {
+                myPayslipBtn = createMenuButton("My Payslip");
+                myPayslipBtn.addActionListener(e -> {
+                    setActive(myPayslipBtn);
+                    mainFrame.showContent("MY_PAYSLIP");
+                });
+                menu.add(myPayslipBtn);
+                menu.add(Box.createVerticalStrut(10));
+            }
 
-        } else {
-            // ADMIN/HR menu
+            if (canLeaveRequest) {
+                requestLeaveBtn = createMenuButton("Request Leave");
+                requestLeaveBtn.addActionListener(e -> {
+                    setActive(requestLeaveBtn);
+                    mainFrame.showContent("LEAVE_REQUEST");
+                });
+                menu.add(requestLeaveBtn);
+            }
+
+            return menu;
+        }
+
+        // ADMIN/HR/FINANCE/IT menu
+        if (canDashboard) {
             dashboardBtn = createMenuButton("Dashboard");
-            employeeBtn = createMenuButton("Employees");
-            payrollBtn = createMenuButton("Payroll");
-
             dashboardBtn.addActionListener(e -> {
                 setActive(dashboardBtn);
                 mainFrame.showContent("DASHBOARD");
             });
+            menu.add(dashboardBtn);
+            menu.add(Box.createVerticalStrut(10));
+        }
 
+        if (canEmployeeCrud) {
+            employeeBtn = createMenuButton("Employees");
             employeeBtn.addActionListener(e -> {
                 setActive(employeeBtn);
                 mainFrame.showContent("EMPLOYEE");
             });
+            menu.add(employeeBtn);
+            menu.add(Box.createVerticalStrut(10));
+        }
 
+        if (canPayroll) {
+            payrollBtn = createMenuButton("Payroll");
             payrollBtn.addActionListener(e -> {
                 setActive(payrollBtn);
                 mainFrame.showContent("PAYROLL");
             });
-
-            menu.add(dashboardBtn);
-            menu.add(Box.createVerticalStrut(10));
-            menu.add(employeeBtn);
-            menu.add(Box.createVerticalStrut(10));
             menu.add(payrollBtn);
+            menu.add(Box.createVerticalStrut(10));
+        }
 
-            // HR/Admin can approve leave
-            if (isAdminOrHr) {
-                menu.add(Box.createVerticalStrut(10));
-                leaveApprovalsBtn = createMenuButton("Leave Approvals");
-
-                leaveApprovalsBtn.addActionListener(e -> {
-                    setActive(leaveApprovalsBtn);
-                    mainFrame.showContent("LEAVE_APPROVAL");
-                });
-
-                menu.add(leaveApprovalsBtn);
-            }
+        if (canLeaveApproval) {
+            leaveApprovalsBtn = createMenuButton("Leave Approvals");
+            leaveApprovalsBtn.addActionListener(e -> {
+                setActive(leaveApprovalsBtn);
+                mainFrame.showContent("LEAVE_APPROVAL");
+            });
+            menu.add(leaveApprovalsBtn);
         }
 
         return menu;

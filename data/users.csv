@@ -1,6 +1,8 @@
 Username,Password,Role,Employee #
 admin,admin123,ADMIN,
 hr1,hr123,HR,
+fin01,pass123,FINANCE,
+it01,pass123,IT,
 emp10001,pass123,EMPLOYEE,10001
 emp10002,pass123,EMPLOYEE,10002
 emp10003,pass123,EMPLOYEE,10003
