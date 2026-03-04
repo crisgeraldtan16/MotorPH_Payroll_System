@@ -109,7 +109,7 @@ public class SideMenuPanel extends JPanel {
     }
 
     // ---------- Menu ----------
-    // ✅ UPDATED: Uses AccessPolicy so Employee Dashboard will appear when allowed
+    //  UPDATED: Uses AccessPolicy so Employee Dashboard will appear when allowed
     private JComponent buildMenu(MainFrame mainFrame) {
         JPanel menu = new JPanel();
         menu.setOpaque(false);
@@ -118,7 +118,7 @@ public class SideMenuPanel extends JPanel {
         User u = Session.getCurrentUser();
         if (u == null) return menu;
 
-        // ✅ Use policy to decide what buttons show
+        //  Use policy to decide what buttons show
         boolean canEmpDash = u.getAccessPolicy().canOpenScreen("EMPLOYEE_DASHBOARD");
         boolean canPayslip = u.getAccessPolicy().canOpenScreen("MY_PAYSLIP");
         boolean canLeaveRequest = u.getAccessPolicy().canOpenScreen("LEAVE_REQUEST");

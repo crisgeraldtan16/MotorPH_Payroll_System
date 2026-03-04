@@ -86,7 +86,7 @@ public class MainFrame extends JFrame {
 
     /**
      * Switches the right-side screen (content area).
-     * ✅ Polymorphism-based access control
+     *  Polymorphism-based access control
      */
     public void showContent(String screen) {
         User u = Session.getCurrentUser();
@@ -96,7 +96,7 @@ public class MainFrame extends JFrame {
             return;
         }
 
-        // ✅ Polymorphism: role rules are inside AccessPolicy classes
+        //  Polymorphism: role rules are inside AccessPolicy classes
         if (!u.getAccessPolicy().canOpenScreen(screen)) {
             screen = u.isEmployee()
                     ? "EMPLOYEE_DASHBOARD"

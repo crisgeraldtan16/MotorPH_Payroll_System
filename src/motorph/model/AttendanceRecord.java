@@ -3,6 +3,15 @@ package motorph.model;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
+
+/*
+ * This class represents an employee's attendance record.
+ * It stores basic employee details along with the date,
+ * login time, and logout time.
+ * Setter and getter methods are provided to allow
+ * updating and accessing the attendance information.
+ */
+
 public class AttendanceRecord {
     private String employeeNumber;
     private String lastName;

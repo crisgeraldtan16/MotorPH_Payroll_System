@@ -1,5 +1,10 @@
 package motorph.model;
 
+/*
+ * This class represents an Employee in the MotorPH system.
+ * It stores personal details, government numbers,
+ * employment information, and salary details.
+ */
 public class Employee {
     private String employeeNumber; // auto-generated
     private String lastName;
@@ -8,26 +13,33 @@ public class Employee {
     private String address;
     private String phoneNumber;
 
+    // Government identification numbers used for payroll deductions
     private String sssNumber;
     private String philHealthNumber;
     private String tinNumber;
     private String pagIbigNumber;
 
+    // Employment details
     private String status; // Regular or Probationary
     private String position;
     private String immediateSupervisor;
 
+    // Salary and allowance details
     private double basicSalary;
     private double riceSubsidy;
     private double phoneAllowance;
     private double clothingAllowance;
 
+    // Computed salary rates
     private double grossSemiMonthlyRate;
     private double hourlyRate;
 
     public Employee() {}
 
-    // --- getters/setters ---
+    /*
+     * Getters and setters are used to access and update
+     * employee information while keeping fields encapsulated.
+     */
     public String getEmployeeNumber() { return employeeNumber; }
     public void setEmployeeNumber(String employeeNumber) { this.employeeNumber = employeeNumber; }
 
@@ -85,7 +97,10 @@ public class Employee {
     public double getHourlyRate() { return hourlyRate; }
     public void setHourlyRate(double hourlyRate) { this.hourlyRate = hourlyRate; }
 
-    // Convenience for table display
+    /*
+     * This method is a convenience method used for display purposes.
+     * It combines first name and last name into a full name.
+     */
     public String getFullName() {
         return firstName + " " + lastName;
     }

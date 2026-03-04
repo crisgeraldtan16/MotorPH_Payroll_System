@@ -44,7 +44,7 @@ public class PayrollPanel extends JPanel {
 
     private List<Employee> employees;
 
-    // ✅ OOP upgrade: UI depends on interface (Abstraction + Polymorphism)
+
     private final PayrollService payrollService = new DefaultPayrollService();
 
     // Left selection

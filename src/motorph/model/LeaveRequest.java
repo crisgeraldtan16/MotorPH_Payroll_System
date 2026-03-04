@@ -1,5 +1,13 @@
 package motorph.model;
 
+/*
+ * This class represents an employee leave request in the system.
+ * It stores the request details such as employee information,
+ * leave dates, reason, and current status.
+ * It also keeps track of when the request was submitted
+ * and reviewed, including who reviewed it.
+ */
+
 public class LeaveRequest {
 
     public enum Status { PENDING, APPROVED, DENIED }

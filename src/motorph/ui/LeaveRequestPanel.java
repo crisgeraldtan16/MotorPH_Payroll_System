@@ -26,12 +26,12 @@ public class LeaveRequestPanel extends JPanel {
 
     private final DateTimeFormatter DF = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-    // ✅ Date dropdowns (From)
+    //  Date dropdowns (From)
     private JComboBox<Integer> fromYear;
     private JComboBox<Integer> fromMonth;
     private JComboBox<Integer> fromDay;
 
-    // ✅ Date dropdowns (To)
+    //  Date dropdowns (To)
     private JComboBox<Integer> toYear;
     private JComboBox<Integer> toMonth;
     private JComboBox<Integer> toDay;
@@ -101,7 +101,7 @@ public class LeaveRequestPanel extends JPanel {
         gbc.insets = new Insets(6, 6, 6, 6);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // ✅ Build date dropdowns
+        //  Build date dropdowns
         buildDatePickers();
 
         reasonArea = new JTextArea(4, 24);

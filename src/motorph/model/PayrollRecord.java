@@ -1,5 +1,12 @@
 package motorph.model;
 
+/*
+ * This class represents the payroll record of an employee for a specific month.
+ * It stores salary details, allowances, attendance data, government contributions,
+ * tax computations, and the final net pay.
+ * Getter and setter methods are used to access and update payroll information.
+ */
+
 import java.time.YearMonth;
 
 public class PayrollRecord {
