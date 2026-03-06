@@ -1,6 +1,8 @@
 package motorph.ui;
 
+import motorph.model.Employee;
 import motorph.model.User;
+import motorph.util.CSVUtil;
 import motorph.util.Session;
 
 import javax.swing.*;
@@ -11,11 +13,11 @@ import java.awt.event.MouseEvent;
 
 public class SideMenuPanel extends JPanel {
 
-    // 🌤 LIGHTER MODERN THEME
-    private static final Color BG = new Color(235, 238, 245);        // light gray-blue
-    private static final Color BTN_BG = new Color(255, 255, 255);   // white
+    //  LIGHTER MODERN THEME
+    private static final Color BG = new Color(235, 238, 245);
+    private static final Color BTN_BG = new Color(255, 255, 255);
     private static final Color BTN_HOVER = new Color(225, 230, 240);
-    private static final Color BTN_ACTIVE = new Color(65, 105, 225); // blue accent
+    private static final Color BTN_ACTIVE = new Color(65, 105, 225);
 
     private static final Color TEXT = new Color(35, 45, 65);
     private static final Color TEXT_MUTED = new Color(110, 120, 145);
@@ -77,9 +79,31 @@ public class SideMenuPanel extends JPanel {
         subtitle.setFont(new Font("Arial", Font.PLAIN, 12));
         subtitle.setForeground(TEXT_MUTED);
 
-        // show role
+        // Logged in user info
         User u = Session.getCurrentUser();
-        String roleTxt = (u == null) ? "-" : u.getRole().name();
+
+        String displayName = "-";
+        String roleTxt = "-";
+
+        if (u != null) {
+            roleTxt = formatRole(u.getRole().name());
+
+            if (u.isEmployee()) {
+                Employee emp = CSVUtil.findEmployeeByNumber(u.getEmployeeNumber());
+                if (emp != null) {
+                    displayName = emp.getFullName();
+                } else {
+                    displayName = u.getUsername();
+                }
+            } else {
+                displayName = u.getUsername();
+            }
+        }
+
+        JLabel nameLabel = new JLabel(displayName);
+        nameLabel.setFont(new Font("Arial", Font.BOLD, 12));
+        nameLabel.setForeground(TEXT);
+
         JLabel roleLabel = new JLabel("Role: " + roleTxt);
         roleLabel.setFont(new Font("Arial", Font.PLAIN, 11));
         roleLabel.setForeground(TEXT_MUTED);
@@ -90,6 +114,7 @@ public class SideMenuPanel extends JPanel {
         textBox.add(title);
         textBox.add(subtitle);
         textBox.add(Box.createVerticalStrut(4));
+        textBox.add(nameLabel);
         textBox.add(roleLabel);
 
         JPanel left = new JPanel();
@@ -108,8 +133,30 @@ public class SideMenuPanel extends JPanel {
         return header;
     }
 
+    private String formatRole(String rawRole) {
+        if (rawRole == null || rawRole.trim().isEmpty()) return "-";
+
+        String lower = rawRole.trim().toLowerCase();
+
+        switch (lower) {
+            case "regular":
+                return "Regular";
+            case "probationary":
+                return "Probationary";
+            case "hr":
+                return "HR";
+            case "it":
+                return "IT";
+            case "finance":
+                return "Finance";
+            case "admin":
+                return "Admin";
+            default:
+                return rawRole;
+        }
+    }
+
     // ---------- Menu ----------
-    //  UPDATED: Uses AccessPolicy so Employee Dashboard will appear when allowed
     private JComponent buildMenu(MainFrame mainFrame) {
         JPanel menu = new JPanel();
         menu.setOpaque(false);
@@ -118,7 +165,7 @@ public class SideMenuPanel extends JPanel {
         User u = Session.getCurrentUser();
         if (u == null) return menu;
 
-        //  Use policy to decide what buttons show
+        // ✅ Use policy to decide what buttons show
         boolean canEmpDash = u.getAccessPolicy().canOpenScreen("EMPLOYEE_DASHBOARD");
         boolean canPayslip = u.getAccessPolicy().canOpenScreen("MY_PAYSLIP");
         boolean canLeaveRequest = u.getAccessPolicy().canOpenScreen("LEAVE_REQUEST");

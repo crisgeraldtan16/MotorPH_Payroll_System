@@ -14,6 +14,10 @@ public class AttendanceDao {
         return AttendanceUtil.loadEntriesForEmployeeMonth(empNo, ym);
     }
 
+    public List<AttendanceRecord> findRecordsForEmployeeMonth(String empNo, YearMonth ym) {
+        return AttendanceUtil.loadRecordsForEmployeeMonth(empNo, ym);
+    }
+
     public AttendanceUtil.AttendanceSummary summarizeForEmployeeMonth(String empNo, YearMonth ym) {
         return AttendanceUtil.summarizeForEmployeeMonth(empNo, ym);
     }

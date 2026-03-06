@@ -1,9 +1,11 @@
 package motorph.ui;
 
+import motorph.model.AttendanceRecord;
 import motorph.model.Employee;
 import motorph.model.LeaveRequest;
 import motorph.model.PayrollRecord;
 import motorph.model.User;
+import motorph.service.AttendanceService;
 import motorph.util.CSVUtil;
 import motorph.util.LeaveIOUtil;
 import motorph.util.PayrollIOUtil;
@@ -12,6 +14,7 @@ import motorph.util.Session;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -35,6 +38,12 @@ public class EmployeeDashboardPanel extends JPanel {
     // Payroll summary
     private JLabel payrollMonthVal, grossVal, taxVal, govVal, netVal;
 
+    // Attendance summary
+    private JLabel attDateVal, attStatusVal, timeInVal, timeOutVal;
+    private JButton timeInBtn, timeOutBtn;
+
+    private final AttendanceService attendanceService = new AttendanceService();
+
     public EmployeeDashboardPanel() {
         setLayout(new BorderLayout(14, 14));
         setBackground(BG);
@@ -54,7 +63,7 @@ public class EmployeeDashboardPanel extends JPanel {
         title.setFont(new Font("Arial", Font.BOLD, 22));
         title.setForeground(TEXT);
 
-        JLabel subtitle = new JLabel("Your profile, payslip info, and leave summary");
+        JLabel subtitle = new JLabel("Your profile, payslip info, leave summary, and attendance");
         subtitle.setFont(new Font("Arial", Font.PLAIN, 13));
         subtitle.setForeground(MUTED);
 
@@ -93,7 +102,7 @@ public class EmployeeDashboardPanel extends JPanel {
         body.setOpaque(false);
 
         // top cards
-        JPanel cards = new JPanel(new GridLayout(1, 3, 12, 12));
+        JPanel cards = new JPanel(new GridLayout(1, 4, 12, 12));
         cards.setOpaque(false);
 
         // Profile card values
@@ -116,9 +125,16 @@ public class EmployeeDashboardPanel extends JPanel {
         netVal.setFont(new Font("Arial", Font.BOLD, 18));
         netVal.setForeground(TEXT);
 
+        // Attendance card values
+        attDateVal = value();
+        attStatusVal = value();
+        timeInVal = value();
+        timeOutVal = value();
+
         cards.add(profileCard());
         cards.add(leaveCard());
         cards.add(payrollCard());
+        cards.add(attendanceCard());
 
         body.add(cards, BorderLayout.NORTH);
 
@@ -131,7 +147,7 @@ public class EmployeeDashboardPanel extends JPanel {
         openPayslipBtn.setFocusPainted(false);
         openLeaveBtn.setFocusPainted(false);
 
-        openPayslipBtn.addActionListener(e -> navigateTo("EMPLOYEE_PAYSLIP"));
+        openPayslipBtn.addActionListener(e -> navigateTo("MY_PAYSLIP"));
         openLeaveBtn.addActionListener(e -> navigateTo("LEAVE_REQUEST"));
 
         quick.add(actionCard("Payslip", "View your latest payroll record and payslip details.", openPayslipBtn));
@@ -229,6 +245,43 @@ public class EmployeeDashboardPanel extends JPanel {
         return card;
     }
 
+    private JComponent attendanceCard() {
+        JPanel card = cardWrap();
+        card.setLayout(new BorderLayout(10, 10));
+
+        JLabel title = new JLabel("Today Attendance");
+        title.setFont(new Font("Arial", Font.BOLD, 14));
+        title.setForeground(TEXT);
+
+        JPanel grid = new JPanel(new GridLayout(4, 2, 8, 8));
+        grid.setOpaque(false);
+
+        grid.add(label("Date")); grid.add(attDateVal);
+        grid.add(label("Status")); grid.add(attStatusVal);
+        grid.add(label("Time In")); grid.add(timeInVal);
+        grid.add(label("Time Out")); grid.add(timeOutVal);
+
+        timeInBtn = new JButton("Time In");
+        timeOutBtn = new JButton("Time Out");
+
+        timeInBtn.setFocusPainted(false);
+        timeOutBtn.setFocusPainted(false);
+
+        timeInBtn.addActionListener(e -> handleTimeIn());
+        timeOutBtn.addActionListener(e -> handleTimeOut());
+
+        JPanel buttonRow = new JPanel(new GridLayout(1, 2, 8, 0));
+        buttonRow.setOpaque(false);
+        buttonRow.add(timeInBtn);
+        buttonRow.add(timeOutBtn);
+
+        card.add(title, BorderLayout.NORTH);
+        card.add(grid, BorderLayout.CENTER);
+        card.add(buttonRow, BorderLayout.SOUTH);
+
+        return card;
+    }
+
     private JComponent actionCard(String titleText, String subtitleText, JButton actionBtn) {
         JPanel card = cardWrap();
         card.setLayout(new BorderLayout(10, 10));
@@ -264,6 +317,42 @@ public class EmployeeDashboardPanel extends JPanel {
         return l;
     }
 
+    private void handleTimeIn() {
+        try {
+            Employee emp = getCurrentEmployee();
+            attendanceService.timeIn(emp);
+            JOptionPane.showMessageDialog(this, "Time In recorded successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
+            refresh();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "Attendance", JOptionPane.WARNING_MESSAGE);
+        }
+    }
+
+    private void handleTimeOut() {
+        try {
+            Employee emp = getCurrentEmployee();
+            attendanceService.timeOut(emp);
+            JOptionPane.showMessageDialog(this, "Time Out recorded successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
+            refresh();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "Attendance", JOptionPane.WARNING_MESSAGE);
+        }
+    }
+
+    private Employee getCurrentEmployee() {
+        User u = Session.getCurrentUser();
+        if (u == null || !u.isEmployee()) {
+            throw new IllegalStateException("Only employee users can access attendance.");
+        }
+
+        String empNo = u.getEmployeeNumber();
+        Employee emp = CSVUtil.findEmployeeByNumber(empNo);
+        if (emp == null) {
+            throw new IllegalStateException("Employee profile not found.");
+        }
+        return emp;
+    }
+
     private void refresh() {
         User u = Session.getCurrentUser();
         if (u == null || !u.isEmployee()) {
@@ -279,6 +368,12 @@ public class EmployeeDashboardPanel extends JPanel {
             govVal.setText("-");
             taxVal.setText("-");
             netVal.setText("-");
+            attDateVal.setText("-");
+            attStatusVal.setText("-");
+            timeInVal.setText("-");
+            timeOutVal.setText("-");
+            if (timeInBtn != null) timeInBtn.setEnabled(false);
+            if (timeOutBtn != null) timeOutBtn.setEnabled(false);
             return;
         }
 
@@ -325,7 +420,42 @@ public class EmployeeDashboardPanel extends JPanel {
             netVal.setText(money(latest.getNetPay()));
         }
 
+        // Attendance card
+        refreshAttendance(empNo);
+
         lastUpdatedVal.setText("Last updated: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+    }
+
+    private void refreshAttendance(String empNo) {
+        attDateVal.setText(String.valueOf(LocalDate.now()));
+
+        AttendanceRecord today = attendanceService.getTodayRecord(empNo);
+
+        if (today == null) {
+            attStatusVal.setText("Not yet timed in");
+            timeInVal.setText("-");
+            timeOutVal.setText("-");
+            timeInBtn.setEnabled(true);
+            timeOutBtn.setEnabled(false);
+            return;
+        }
+
+        timeInVal.setText(today.getLogIn() == null ? "-" : today.getLogIn().toString());
+        timeOutVal.setText(today.getLogOut() == null ? "-" : today.getLogOut().toString());
+
+        if (today.getLogIn() != null && today.getLogOut() == null) {
+            attStatusVal.setText("Timed In");
+            timeInBtn.setEnabled(false);
+            timeOutBtn.setEnabled(true);
+        } else if (today.getLogIn() != null && today.getLogOut() != null) {
+            attStatusVal.setText("Completed");
+            timeInBtn.setEnabled(false);
+            timeOutBtn.setEnabled(false);
+        } else {
+            attStatusVal.setText("Not yet timed in");
+            timeInBtn.setEnabled(true);
+            timeOutBtn.setEnabled(false);
+        }
     }
 
     private String money(double v) {
