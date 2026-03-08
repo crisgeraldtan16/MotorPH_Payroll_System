@@ -15,11 +15,11 @@ public class MainFrame extends JFrame {
     private JPanel contentCards;
     private CardLayout contentLayout;
 
-    // Keep panel references so we can refresh them before showing
     private DashboardPanel dashboardPanel;
     private EmployeePanel employeePanel;
     private PayrollPanel payrollPanel;
     private LeaveApprovalPanel leaveApprovalPanel;
+    private UserAccountsPanel userAccountsPanel;
 
     private EmployeeDashboardPanel employeeDashboardPanel;
     private MyPayslipPanel myPayslipPanel;
@@ -28,8 +28,6 @@ public class MainFrame extends JFrame {
     public MainFrame() {
         setTitle("MotorPH Employee Payroll System");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-        // start maximized
         setExtendedState(JFrame.MAXIMIZED_BOTH);
 
         root.add(new LoginPanel(this), "LOGIN");
@@ -47,23 +45,22 @@ public class MainFrame extends JFrame {
         contentCards = new JPanel(contentLayout);
         contentCards.setBackground(new Color(245, 247, 252));
 
-        // Create panel instances once
         dashboardPanel = new DashboardPanel();
         employeePanel = new EmployeePanel(this);
         payrollPanel = new PayrollPanel(this);
         leaveApprovalPanel = new LeaveApprovalPanel();
+        userAccountsPanel = new UserAccountsPanel();
 
         employeeDashboardPanel = new EmployeeDashboardPanel();
         myPayslipPanel = new MyPayslipPanel();
         leaveRequestPanel = new LeaveRequestPanel();
 
-        // Admin/HR screens
         contentCards.add(dashboardPanel, "DASHBOARD");
         contentCards.add(employeePanel, "EMPLOYEE");
         contentCards.add(payrollPanel, "PAYROLL");
         contentCards.add(leaveApprovalPanel, "LEAVE_APPROVAL");
+        contentCards.add(userAccountsPanel, "USER_ACCOUNTS");
 
-        // Employee portal screens
         contentCards.add(employeeDashboardPanel, "EMPLOYEE_DASHBOARD");
         contentCards.add(myPayslipPanel, "MY_PAYSLIP");
         contentCards.add(leaveRequestPanel, "LEAVE_REQUEST");
@@ -72,10 +69,6 @@ public class MainFrame extends JFrame {
         return appShell;
     }
 
-    /**
-     * Rebuild sidebar + show APP shell after login.
-     * Employee will land on EMPLOYEE_DASHBOARD, Admin/HR will land on DASHBOARD.
-     */
     public void showMainApp() {
         buildMainAppUI();
         rootLayout.show(root, "APP");
@@ -88,9 +81,6 @@ public class MainFrame extends JFrame {
         }
     }
 
-    /**
-     * Rebuilds the left sidebar depending on role.
-     */
     private void buildMainAppUI() {
         Component oldWest = ((BorderLayout) appShell.getLayout())
                 .getLayoutComponent(BorderLayout.WEST);
@@ -104,11 +94,6 @@ public class MainFrame extends JFrame {
         appShell.repaint();
     }
 
-    /**
-     * Switches the right-side screen (content area).
-     * ✅ Polymorphism-based access control
-     * ✅ Auto-refreshes dashboards and key employee/admin pages
-     */
     public void showContent(String screen) {
         User u = Session.getCurrentUser();
 
@@ -117,22 +102,18 @@ public class MainFrame extends JFrame {
             return;
         }
 
-        // Access control
         if (!u.getAccessPolicy().canOpenScreen(screen)) {
             screen = u.isEmployee() ? "EMPLOYEE_DASHBOARD" : "DASHBOARD";
         }
 
-        // ✅ Admin dashboard auto refresh
         if ("DASHBOARD".equals(screen) && dashboardPanel != null) {
             dashboardPanel.refreshData();
         }
 
-        // ✅ Employee dashboard auto refresh
         if ("EMPLOYEE_DASHBOARD".equals(screen) && employeeDashboardPanel != null) {
             employeeDashboardPanel.refreshData();
         }
 
-        // ✅ Employee pages auto refresh
         if ("MY_PAYSLIP".equals(screen) && myPayslipPanel != null) {
             myPayslipPanel.refreshData();
         }
@@ -141,17 +122,17 @@ public class MainFrame extends JFrame {
             leaveRequestPanel.refreshData();
         }
 
-        // ✅ Admin/HR leave approval auto refresh
         if ("LEAVE_APPROVAL".equals(screen) && leaveApprovalPanel != null) {
             leaveApprovalPanel.refreshData();
+        }
+
+        if ("USER_ACCOUNTS".equals(screen) && userAccountsPanel != null) {
+            userAccountsPanel.refreshData();
         }
 
         contentLayout.show(contentCards, screen);
     }
 
-    /**
-     * Logout resets session and returns to login screen.
-     */
     public void logout() {
         Session.clear();
         rootLayout.show(root, "LOGIN");

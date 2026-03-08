@@ -22,11 +22,12 @@ public class SideMenuPanel extends JPanel {
     private static final Color TEXT = new Color(35, 45, 65);
     private static final Color TEXT_MUTED = new Color(110, 120, 145);
 
-    // Admin/HR buttons
+    // Admin/HR/IT buttons
     private JButton dashboardBtn;
     private JButton employeeBtn;
     private JButton payrollBtn;
     private JButton leaveApprovalsBtn;
+    private JButton userAccountsBtn;
 
     // Employee buttons
     private JButton empDashboardBtn;
@@ -176,6 +177,7 @@ public class SideMenuPanel extends JPanel {
         boolean canEmployeeCrud = u.getAccessPolicy().canOpenScreen("EMPLOYEE");
         boolean canPayroll = u.getAccessPolicy().canOpenScreen("PAYROLL");
         boolean canLeaveApproval = u.getAccessPolicy().canOpenScreen("LEAVE_APPROVAL");
+        boolean canUserAccounts = u.getAccessPolicy().canOpenScreen("USER_ACCOUNTS");
 
         // EMPLOYEE-type menu
         if (canEmpDash || canPayslip || canLeaveRequest) {
@@ -250,6 +252,17 @@ public class SideMenuPanel extends JPanel {
                 mainFrame.showContent("LEAVE_APPROVAL");
             });
             menu.add(leaveApprovalsBtn);
+            menu.add(Box.createVerticalStrut(10));
+        }
+
+        if (canUserAccounts) {
+            userAccountsBtn = createMenuButton("User Accounts");
+            userAccountsBtn.addActionListener(e -> {
+                setActive(userAccountsBtn);
+                mainFrame.showContent("USER_ACCOUNTS");
+            });
+            menu.add(userAccountsBtn);
+            menu.add(Box.createVerticalStrut(10));
         }
 
         return menu;
@@ -340,8 +353,8 @@ public class SideMenuPanel extends JPanel {
     // ---------- Active State ----------
     private void setActive(JButton activeBtn) {
         JButton[] all = {
-                // Admin/HR
-                dashboardBtn, employeeBtn, payrollBtn, leaveApprovalsBtn,
+                // Admin/HR/IT
+                dashboardBtn, employeeBtn, payrollBtn, leaveApprovalsBtn, userAccountsBtn,
                 // Employee
                 empDashboardBtn, myPayslipBtn, requestLeaveBtn
         };

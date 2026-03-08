@@ -217,7 +217,7 @@ public class PayrollPanel extends JPanel {
         refreshBtn.setFocusPainted(false);
         refreshBtn.addActionListener(e -> refreshEmployees());
 
-        JButton computeSelectedBtn = new JButton("Compute Selected");
+        JButton computeSelectedBtn = new JButton("Compute Employee Selected");
         computeSelectedBtn.setFocusPainted(false);
         computeSelectedBtn.setFont(new Font("Arial", Font.BOLD, 12));
         computeSelectedBtn.addActionListener(e -> computeSelectedEmployee());
