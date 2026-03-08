@@ -19,7 +19,7 @@ public class LoginPanel extends JPanel {
     private JPasswordField passwordField;
     private JCheckBox showPasswordCheck;
 
-    // Light theme colors (matches your updated UI direction)
+    // These colors are used to keep the login UI consistent
     private static final Color BG = new Color(245, 247, 252);
     private static final Color CARD_BG = Color.WHITE;
     private static final Color BORDER = new Color(225, 230, 240);
@@ -32,7 +32,6 @@ public class LoginPanel extends JPanel {
         setLayout(new GridBagLayout());
         setBackground(BG);
 
-        // Main card
         JPanel card = new JPanel();
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setBackground(CARD_BG);
@@ -42,7 +41,6 @@ public class LoginPanel extends JPanel {
         ));
         card.setPreferredSize(new Dimension(420, 360));
 
-        // Header
         JLabel brand = new JLabel("MotorPH");
         brand.setFont(new Font("Arial", Font.BOLD, 22));
         brand.setForeground(TEXT);
@@ -72,7 +70,6 @@ public class LoginPanel extends JPanel {
         card.add(loginHint);
         card.add(Box.createVerticalStrut(18));
 
-        // Form
         card.add(makeLabel("Username"));
         usernameField = new JTextField();
         usernameField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 34));
@@ -85,12 +82,15 @@ public class LoginPanel extends JPanel {
         card.add(passwordField);
         card.add(Box.createVerticalStrut(8));
 
-        // Show password
         showPasswordCheck = new JCheckBox("Show password");
         showPasswordCheck.setOpaque(false);
         showPasswordCheck.setForeground(MUTED);
         showPasswordCheck.setAlignmentX(Component.LEFT_ALIGNMENT);
 
+        /*
+         * This lets the user show or hide the password
+         * while typing in the login form.
+         */
         char defaultEcho = passwordField.getEchoChar();
         showPasswordCheck.addActionListener(e -> {
             if (showPasswordCheck.isSelected()) {
@@ -103,7 +103,6 @@ public class LoginPanel extends JPanel {
         card.add(showPasswordCheck);
         card.add(Box.createVerticalStrut(16));
 
-        // Buttons row
         JPanel btnRow = new JPanel(new GridLayout(1, 1, 10, 0));
         btnRow.setOpaque(false);
         btnRow.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -118,14 +117,16 @@ public class LoginPanel extends JPanel {
         card.add(btnRow);
         card.add(Box.createVerticalStrut(12));
 
-        // Footer note
         JLabel footer = new JLabel("Tip: Press Enter to login.");
         footer.setFont(new Font("Arial", Font.PLAIN, 11));
         footer.setForeground(MUTED);
         footer.setAlignmentX(Component.LEFT_ALIGNMENT);
         card.add(footer);
 
-        // Enter key triggers login
+        /*
+         * This allows the Enter key to trigger login
+         * for better user convenience.
+         */
         KeyAdapter enterToLogin = new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
@@ -137,7 +138,6 @@ public class LoginPanel extends JPanel {
         usernameField.addKeyListener(enterToLogin);
         passwordField.addKeyListener(enterToLogin);
 
-        // Add the card centered
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 0;
@@ -153,6 +153,10 @@ public class LoginPanel extends JPanel {
         return l;
     }
 
+    /*
+     * This checks the entered username and password
+     * and logs the user into the system if valid.
+     */
     private void authenticate() {
         String username = usernameField.getText().trim();
         String password = new String(passwordField.getPassword());
@@ -173,7 +177,10 @@ public class LoginPanel extends JPanel {
             if (user.getUsername().equals(username)
                     && user.getPassword().equals(password)) {
 
-                // EMPLOYEE must be linked to Employee #
+                /*
+                 * This makes sure employee accounts
+                 * are properly linked to an employee number.
+                 */
                 if (user.isEmployee() && (user.getEmployeeNumber() == null || user.getEmployeeNumber().isBlank())) {
                     JOptionPane.showMessageDialog(
                             this,
@@ -184,7 +191,7 @@ public class LoginPanel extends JPanel {
                     return;
                 }
 
-                // Store session so the menu + access control works
+                // The logged-in user is saved in session for access control
                 Session.setCurrentUser(user);
 
                 usernameField.setText("");

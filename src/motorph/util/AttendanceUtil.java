@@ -17,14 +17,14 @@ public class AttendanceUtil {
 
     private static final String ATTENDANCE_CSV_PATH = "data/attendance.csv";
 
-    // Company rules
+    // Company attendance rules used for late checking
     private static final LocalTime START_TIME = LocalTime.of(8, 0);
     private static final int GRACE_MINUTES = 10;
 
-    // Your attendance header (must match exactly)
+    // This header must match the CSV file format exactly
     private static final String HEADER = "Employee #,Last Name,First Name,Date,Log In,Log Out";
 
-    // Date/Time output formats (what we write back to CSV)
+    // These formats are used when saving date and time back to CSV
     private static final DateTimeFormatter OUT_DATE = DateTimeFormatter.ofPattern("MM/dd/yyyy");
     private static final DateTimeFormatter OUT_TIME = DateTimeFormatter.ofPattern("HH:mm");
 
@@ -38,7 +38,10 @@ public class AttendanceUtil {
         }
     }
 
-    // ===================== PAYROLL SUMMARY =====================
+    /*
+     * This summarizes an employee's attendance for a given month.
+     * It returns total days present and total late minutes.
+     */
     public static AttendanceSummary summarizeForEmployeeMonth(String employeeNo, YearMonth ym) {
         List<AttendanceEntry> entries = loadEntriesForEmployeeMonth(employeeNo, ym);
 
@@ -52,11 +55,6 @@ public class AttendanceUtil {
         return new AttendanceSummary(daysPresent, totalLateMinutes);
     }
 
-    // ===================== TIME CARD LOADERS =====================
-    /**
-     * Loads attendance records (full fields) for one employee in a month.
-     * CSV header: Employee #,Last Name,First Name,Date,Log In,Log Out
-     */
     public static List<AttendanceRecord> loadRecordsForEmployeeMonth(String employeeNo, YearMonth ym) {
         List<AttendanceRecord> list = new ArrayList<>();
         for (AttendanceRecord r : loadAllRecords()) {
@@ -72,8 +70,9 @@ public class AttendanceUtil {
         return list;
     }
 
-    /**
-     * Loads simplified entries used by payroll calculation / timecard table.
+    /*
+     * This converts full attendance records into simpler entries
+     * used in payroll computation and timecard display.
      */
     public static List<AttendanceEntry> loadEntriesForEmployeeMonth(String employeeNo, YearMonth ym) {
         List<AttendanceEntry> list = new ArrayList<>();
@@ -86,7 +85,6 @@ public class AttendanceUtil {
         return list;
     }
 
-    // ===================== TIME CARD CRUD =====================
     public static void addRecord(AttendanceRecord record) throws IOException {
         List<AttendanceRecord> all = loadAllRecords();
         all.add(record);
@@ -109,7 +107,10 @@ public class AttendanceUtil {
         saveAllRecords(all);
     }
 
-    // This identifies a record. We use Employee # + Date + Log In + Log Out.
+    /*
+     * This finds the exact attendance record to edit or delete
+     * using employee number, date, log in, and log out.
+     */
     private static int findRecordIndex(List<AttendanceRecord> all, AttendanceRecord key) {
         for (int i = 0; i < all.size(); i++) {
             AttendanceRecord r = all.get(i);
@@ -128,7 +129,9 @@ public class AttendanceUtil {
         return a.equals(b);
     }
 
-    // Loads all attendance records (entire file)
+    /*
+     * This loads all attendance records from the CSV file.
+     */
     public static List<AttendanceRecord> loadAllRecords() {
         ensureFileExists();
 
@@ -155,7 +158,6 @@ public class AttendanceUtil {
             }
         } catch (Exception ignored) {}
 
-        // Keep a stable order in the file
         list.sort(Comparator.comparing(AttendanceRecord::getEmployeeNumber, Comparator.nullsLast(String::compareTo))
                 .thenComparing(AttendanceRecord::getDate, Comparator.nullsLast(Comparator.naturalOrder()))
                 .thenComparing(AttendanceRecord::getLogIn, Comparator.nullsLast(Comparator.naturalOrder())));
@@ -163,7 +165,10 @@ public class AttendanceUtil {
         return list;
     }
 
-    // Saves all records back to CSV (rewrite file)
+    /*
+     * This rewrites the whole attendance file
+     * after add, update, or delete operations.
+     */
     public static void saveAllRecords(List<AttendanceRecord> records) throws IOException {
         ensureFileExists();
 
@@ -191,6 +196,9 @@ public class AttendanceUtil {
         return (s == null) ? "" : s.trim();
     }
 
+    /*
+     * This makes sure the attendance CSV file exists before reading or writing.
+     */
     private static void ensureFileExists() {
         File f = new File(ATTENDANCE_CSV_PATH);
         if (!f.exists()) {
@@ -204,7 +212,9 @@ public class AttendanceUtil {
         }
     }
 
-    // ===================== RULE HELPERS =====================
+    /*
+     * This computes late minutes with the grace period applied.
+     */
     public static long computeLateMinutesWithGrace(LocalTime timeIn, int graceMinutes) {
         LocalTime graceCutoff = START_TIME.plusMinutes(graceMinutes);
         if (timeIn != null && timeIn.isAfter(graceCutoff)) {
@@ -213,6 +223,9 @@ public class AttendanceUtil {
         return 0;
     }
 
+    /*
+     * This computes total worked hours based on log in and log out.
+     */
     public static double computeWorkedHours(LocalTime in, LocalTime out) {
         if (in == null || out == null) return 0;
         long minutes = Duration.between(in, out).toMinutes();
@@ -220,7 +233,6 @@ public class AttendanceUtil {
         return minutes / 60.0;
     }
 
-    // ===================== PARSERS =====================
     private static LocalDate parseDateFlexible(String s) {
         if (s == null || s.isBlank()) return null;
 

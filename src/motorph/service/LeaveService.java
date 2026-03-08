@@ -5,6 +5,10 @@ import motorph.model.LeaveRequest;
 
 import java.util.List;
 
+/*
+ * This service class handles leave-related operations.
+ * It connects the UI to the LeaveDao.
+ */
 public class LeaveService {
 
     private final LeaveDao leaveDao;
@@ -21,6 +25,9 @@ public class LeaveService {
         return leaveDao.findAll();
     }
 
+    /*
+     * This method gets all leave requests of a specific employee.
+     */
     public List<LeaveRequest> getRequestsForEmployee(String empNo) {
         return leaveDao.findForEmployee(empNo);
     }

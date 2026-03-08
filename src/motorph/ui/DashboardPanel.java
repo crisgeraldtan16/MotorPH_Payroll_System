@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 
 public class DashboardPanel extends JPanel {
 
-    // Theme
+    // These colors are used for the dashboard theme
     private static final Color BG = new Color(245, 247, 252);
     private static final Color CARD_BG = Color.WHITE;
     private static final Color BORDER = new Color(225, 230, 240);
@@ -25,13 +25,13 @@ public class DashboardPanel extends JPanel {
 
     private JLabel lastUpdatedVal;
 
-    // Stat values
+    // Labels for dashboard summary values
     private JLabel totalVal, regularVal, probationaryVal, avgSalaryVal;
 
-    // Status values
+    // Labels for file status display
     private JLabel employeesCsvVal, attendanceCsvVal;
 
-    // Recent table
+    // Table model for showing recent employees
     private DefaultTableModel recentModel;
 
     public DashboardPanel() {
@@ -45,7 +45,6 @@ public class DashboardPanel extends JPanel {
         refreshDashboard();
     }
 
-    // ---------------- Header ----------------
     private JComponent buildHeader() {
         JPanel header = new JPanel(new BorderLayout(12, 12));
         header.setOpaque(false);
@@ -89,12 +88,10 @@ public class DashboardPanel extends JPanel {
         return header;
     }
 
-    // ---------------- Body ----------------
     private JComponent buildBody() {
         JPanel body = new JPanel(new BorderLayout(14, 14));
         body.setOpaque(false);
 
-        // Top: cards row
         JPanel cards = new JPanel(new GridLayout(1, 4, 12, 12));
         cards.setOpaque(false);
 
@@ -110,7 +107,6 @@ public class DashboardPanel extends JPanel {
 
         body.add(cards, BorderLayout.NORTH);
 
-        // Bottom: split layout (Recent + Right column)
         JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
                 recentEmployeesCard(),
                 rightColumn()
@@ -124,7 +120,6 @@ public class DashboardPanel extends JPanel {
         return body;
     }
 
-    // ---------------- Components ----------------
     private JLabel bigValueLabel() {
         JLabel l = new JLabel("-");
         l.setFont(new Font("Arial", Font.BOLD, 28));
@@ -184,6 +179,7 @@ public class DashboardPanel extends JPanel {
         top.add(Box.createVerticalStrut(2));
         top.add(subtitle);
 
+        // This table shows the 5 most recent employees and is read-only
         recentModel = new DefaultTableModel(new Object[]{"Employee #", "Name", "Position", "Status"}, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
@@ -302,7 +298,7 @@ public class DashboardPanel extends JPanel {
         return card;
     }
 
-    // ---------------- Refresh ----------------
+    // This method refreshes all dashboard data and updates the UI
     private void refreshDashboard() {
         List<Employee> employees = CSVUtil.loadEmployees();
 
@@ -338,6 +334,7 @@ public class DashboardPanel extends JPanel {
         lastUpdatedVal.setText("Last updated: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
     }
 
+    // This method sorts employees by employee number and shows the latest 5
     private void refreshRecentEmployees(List<Employee> employees) {
         List<Employee> recent = employees.stream()
                 .sorted(Comparator.comparingInt((Employee e) -> parseEmpNo(e.getEmployeeNumber())).reversed())
@@ -355,6 +352,7 @@ public class DashboardPanel extends JPanel {
         }
     }
 
+    // This helper extracts the numeric part of the employee number for sorting
     private int parseEmpNo(String empNo) {
         if (empNo == null) return 0;
         String digits = empNo.replaceAll("\\D+", "");
@@ -363,15 +361,15 @@ public class DashboardPanel extends JPanel {
     }
 
     private void refreshSystemStatus() {
-        employeesCsvVal.setText(fileExists("data/employees.csv") ? "FOUND ✅" : "MISSING ❌");
-        attendanceCsvVal.setText(fileExists("data/attendance.csv") ? "FOUND ✅" : "MISSING ❌");
+        employeesCsvVal.setText(fileExists("data/employees.csv") ? "FOUND" : "MISSING");
+        attendanceCsvVal.setText(fileExists("data/attendance.csv") ? "FOUND" : "MISSING");
     }
 
     private boolean fileExists(String path) {
         return new File(path).exists();
     }
 
-    // ---------------- Navigation helper ----------------
+    // This helper lets the dashboard open another screen in the main frame
     private void navigateTo(String screenName) {
         Window window = SwingUtilities.getWindowAncestor(this);
         if (window instanceof MainFrame) {

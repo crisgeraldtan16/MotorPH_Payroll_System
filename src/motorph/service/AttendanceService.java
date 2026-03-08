@@ -11,6 +11,11 @@ import java.time.LocalTime;
 import java.time.YearMonth;
 import java.util.List;
 
+/*
+ * This service class handles the attendance-related business logic.
+ * It connects the UI to the DAO and manages time in, time out,
+ * and attendance summary functions.
+ */
 public class AttendanceService {
 
     private final AttendanceDao attendanceDao;
@@ -31,6 +36,9 @@ public class AttendanceService {
         return attendanceDao.summarizeForEmployeeMonth(empNo, ym);
     }
 
+    /*
+     * This method checks the employee's attendance record for today.
+     */
     public AttendanceRecord getTodayRecord(String empNo) {
         YearMonth ym = YearMonth.now();
         LocalDate today = LocalDate.now();
@@ -44,6 +52,10 @@ public class AttendanceService {
         return null;
     }
 
+    /*
+     * This method records the employee's time in for the current day.
+     * It also checks if the employee already timed in.
+     */
     public void timeIn(Employee emp) {
         if (emp == null || emp.getEmployeeNumber() == null || emp.getEmployeeNumber().trim().isEmpty()) {
             throw new IllegalArgumentException("Employee information is incomplete.");
@@ -66,6 +78,10 @@ public class AttendanceService {
         attendanceDao.add(record);
     }
 
+    /*
+     * This method records the employee's time out for the current day.
+     * It makes sure that the employee already timed in first.
+     */
     public void timeOut(Employee emp) {
         if (emp == null || emp.getEmployeeNumber() == null || emp.getEmployeeNumber().trim().isEmpty()) {
             throw new IllegalArgumentException("Employee information is incomplete.");
@@ -93,6 +109,10 @@ public class AttendanceService {
         attendanceDao.update(today, updated);
     }
 
+    /*
+     * This helper method returns the current time without seconds and nanoseconds.
+     * This keeps the recorded time cleaner and more consistent.
+     */
     private LocalTime nowNoSeconds() {
         return LocalTime.now().withSecond(0).withNano(0);
     }

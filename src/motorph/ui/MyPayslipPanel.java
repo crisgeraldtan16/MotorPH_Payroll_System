@@ -14,6 +14,7 @@ import java.util.List;
 
 public class MyPayslipPanel extends JPanel {
 
+    // Theme colors used in the payslip panel
     private static final Color BG = new Color(245, 247, 252);
     private static final Color CARD_BG = Color.WHITE;
     private static final Color BORDER = new Color(225, 230, 240);
@@ -109,6 +110,10 @@ public class MyPayslipPanel extends JPanel {
         t.setFont(new Font("Arial", Font.BOLD, 14));
         t.setForeground(TEXT);
 
+        /*
+         * This table shows the employee's payroll records
+         * for the selected month and year.
+         */
         model = new DefaultTableModel(
                 new Object[]{"Month", "Days Present", "Late (min)", "Gov", "Tax", "Net"},
                 0
@@ -123,7 +128,7 @@ public class MyPayslipPanel extends JPanel {
         card.add(t, BorderLayout.NORTH);
         card.add(new JScrollPane(table), BorderLayout.CENTER);
 
-        // store table reference in component for selection
+        // This saves the table reference so it can be accessed later
         card.putClientProperty("table", table);
 
         return card;
@@ -152,6 +157,10 @@ public class MyPayslipPanel extends JPanel {
         return card;
     }
 
+    /*
+     * This gets the selected year and month from the dropdowns
+     * and converts them into a YearMonth value.
+     */
     private YearMonth getSelectedMonth() {
         int year = (int) yearCombo.getSelectedItem();
         String m = (String) monthCombo.getSelectedItem();
@@ -159,6 +168,10 @@ public class MyPayslipPanel extends JPanel {
         return YearMonth.of(year, month);
     }
 
+    /*
+     * This reloads the payroll records of the logged-in employee
+     * based on the selected year and month.
+     */
     private void refresh() {
         model.setRowCount(0);
         payslipArea.setText("Select a payroll record then click “View Selected”.\n");
@@ -181,6 +194,10 @@ public class MyPayslipPanel extends JPanel {
         }
     }
 
+    /*
+     * This shows the full payslip details
+     * of the selected payroll record.
+     */
     private void showSelectedPayslip() {
         User u = Session.getCurrentUser();
         if (u == null || !u.isEmployee()) return;
@@ -201,7 +218,8 @@ public class MyPayslipPanel extends JPanel {
             return;
         }
 
-        PayrollRecord pr = list.get(0); // you save one per month per employee
+        // One payroll record is expected per employee per month
+        PayrollRecord pr = list.get(0);
         payslipArea.setText(PayrollIOUtil.formatPayslipText(pr));
         payslipArea.setCaretPosition(0);
     }

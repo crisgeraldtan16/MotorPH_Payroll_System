@@ -18,6 +18,7 @@ import java.util.List;
 
 public class LeaveRequestPanel extends JPanel {
 
+    // Theme colors used in the panel
     private static final Color BG = new Color(245, 247, 252);
     private static final Color CARD_BG = Color.WHITE;
     private static final Color BORDER = new Color(225, 230, 240);
@@ -26,12 +27,12 @@ public class LeaveRequestPanel extends JPanel {
 
     private final DateTimeFormatter DF = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-    //  Date dropdowns (From)
+    // Date dropdowns for the leave start date
     private JComboBox<Integer> fromYear;
     private JComboBox<Integer> fromMonth;
     private JComboBox<Integer> fromDay;
 
-    //  Date dropdowns (To)
+    // Date dropdowns for the leave end date
     private JComboBox<Integer> toYear;
     private JComboBox<Integer> toMonth;
     private JComboBox<Integer> toDay;
@@ -101,26 +102,26 @@ public class LeaveRequestPanel extends JPanel {
         gbc.insets = new Insets(6, 6, 6, 6);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        //  Build date dropdowns
+        /*
+         * These date pickers are used so the user can select
+         * the leave start date and end date more easily.
+         */
         buildDatePickers();
 
         reasonArea = new JTextArea(4, 24);
         reasonArea.setLineWrap(true);
         reasonArea.setWrapStyleWord(true);
 
-        // FROM row
         gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0.25;
         form.add(label("From Date *"), gbc);
         gbc.gridx = 1; gbc.weightx = 0.75;
         form.add(dateRow(fromYear, fromMonth, fromDay), gbc);
 
-        // TO row
         gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0.25;
         form.add(label("To Date *"), gbc);
         gbc.gridx = 1; gbc.weightx = 0.75;
         form.add(dateRow(toYear, toMonth, toDay), gbc);
 
-        // Reason row
         gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0.25;
         form.add(label("Reason *"), gbc);
         gbc.gridx = 1; gbc.weightx = 0.75;
@@ -143,8 +144,11 @@ public class LeaveRequestPanel extends JPanel {
         return card;
     }
 
+    /*
+     * This creates the year, month, and day dropdowns
+     * for both the from date and to date.
+     */
     private void buildDatePickers() {
-        // Range: 2020..2030 (you can adjust)
         Integer[] years = new Integer[11];
         for (int i = 0; i < years.length; i++) years[i] = 2020 + i;
 
@@ -159,12 +163,10 @@ public class LeaveRequestPanel extends JPanel {
         toMonth = new JComboBox<>(months);
         toDay = new JComboBox<>();
 
-        // Default: today
         LocalDate today = LocalDate.now();
         setPickerDate(fromYear, fromMonth, fromDay, today);
         setPickerDate(toYear, toMonth, toDay, today);
 
-        // Update day list whenever year/month changes
         fromYear.addActionListener(e -> refreshDays(fromYear, fromMonth, fromDay));
         fromMonth.addActionListener(e -> refreshDays(fromYear, fromMonth, fromDay));
         toYear.addActionListener(e -> refreshDays(toYear, toMonth, toDay));
@@ -195,6 +197,10 @@ public class LeaveRequestPanel extends JPanel {
         d.setSelectedItem(date.getDayOfMonth());
     }
 
+    /*
+     * This updates the day dropdown based on the selected
+     * month and year, so invalid dates are avoided.
+     */
     private void refreshDays(JComboBox<Integer> y, JComboBox<Integer> m, JComboBox<Integer> d) {
         int year = (int) y.getSelectedItem();
         int month = (int) m.getSelectedItem();
@@ -224,6 +230,10 @@ public class LeaveRequestPanel extends JPanel {
         t.setFont(new Font("Arial", Font.BOLD, 14));
         t.setForeground(TEXT);
 
+        /*
+         * The table shows the user's submitted leave requests.
+         * It is read-only so records cannot be edited directly here.
+         */
         model = new DefaultTableModel(
                 new Object[]{"Request ID", "From", "To", "Reason", "Status", "Submitted"},
                 0
@@ -242,6 +252,10 @@ public class LeaveRequestPanel extends JPanel {
         return card;
     }
 
+    /*
+     * This validates the form and creates a new leave request
+     * for the currently logged-in employee.
+     */
     private void submit() {
         User u = Session.getCurrentUser();
         if (u == null || !u.isEmployee()) {
@@ -290,7 +304,6 @@ public class LeaveRequestPanel extends JPanel {
             LeaveIOUtil.append(r);
             JOptionPane.showMessageDialog(this, "Leave request submitted.", "Submitted", JOptionPane.INFORMATION_MESSAGE);
 
-            // Reset: keep dates today, clear reason
             reasonArea.setText("");
             refresh();
         } catch (Exception ex) {
@@ -298,6 +311,10 @@ public class LeaveRequestPanel extends JPanel {
         }
     }
 
+    /*
+     * This reloads the current employee's leave requests
+     * and displays them in the table.
+     */
     private void refresh() {
         model.setRowCount(0);
 
@@ -341,6 +358,9 @@ public class LeaveRequestPanel extends JPanel {
         return card;
     }
 
+    /*
+     * This shortens long text so the table stays clean and readable.
+     */
     private String shorten(String s, int max) {
         if (s == null) return "";
         if (s.length() <= max) return s;

@@ -7,15 +7,24 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
+/*
+ * This utility class handles reading and writing
+ * of user and employee data from CSV files.
+ */
 public class CSVUtil {
 
     private static final String USER_FILE = "data/users.csv";
     private static final String EMPLOYEE_FILE = "data/employees.csv";
 
+    // This is the header format used when creating employees.csv
     private static final String EMPLOYEE_HEADER =
             "Employee #,Last Name,First Name,Birthday,Address,Phone Number,SSS #,Philhealth #,TIN #,Pag-ibig #,Status,Position,Immediate Supervisor,Basic Salary,Rice Subsidy,Phone Allowance,Clothing Allowance,Gross Semi-monthly Rate,Hourly Rate";
 
     // ---------------- USERS ----------------
+    /*
+     * This method loads all user accounts from users.csv
+     * and converts each row into a User object.
+     */
     public static List<User> loadUsers() {
         List<User> users = new ArrayList<>();
 
@@ -56,6 +65,9 @@ public class CSVUtil {
     }
 
     // ------------- EMPLOYEES --------------
+    /*
+     * This method loads all employee records from employees.csv.
+     */
     public static List<Employee> loadEmployees() {
         ensureEmployeeFileExists();
 
@@ -106,6 +118,10 @@ public class CSVUtil {
         return employees;
     }
 
+    /*
+     * This method rewrites all employee records
+     * back to the employees.csv file.
+     */
     public static void saveEmployees(List<Employee> employees) {
         ensureEmployeeFileExists();
 
@@ -120,6 +136,10 @@ public class CSVUtil {
         }
     }
 
+    /*
+     * This generates the next employee number
+     * by finding the highest existing number first.
+     */
     public static String generateNextEmployeeNumber(List<Employee> employees) {
         int max = 10000;
 
@@ -140,7 +160,9 @@ public class CSVUtil {
         return String.valueOf(max + 1);
     }
 
-    // ✅ UPDATED METHOD (IMPROVED VERSION)
+    /*
+     * This searches for an employee using the employee number.
+     */
     public static Employee findEmployeeByNumber(String empNo) {
         if (empNo == null || empNo.trim().isEmpty()) return null;
 
@@ -175,6 +197,10 @@ public class CSVUtil {
                 e.getHourlyRate();
     }
 
+    /*
+     * This makes sure the employees.csv file exists.
+     * If not, it creates the file with the correct header.
+     */
     private static void ensureEmployeeFileExists() {
         try {
             File file = new File(EMPLOYEE_FILE);
@@ -196,6 +222,10 @@ public class CSVUtil {
         return s.replace(",", " ").trim();
     }
 
+    /*
+     * This safely converts text to double.
+     * If the value is invalid, it returns 0.0.
+     */
     private static double parseDoubleSafe(String s) {
         try {
             return Double.parseDouble(s.trim());

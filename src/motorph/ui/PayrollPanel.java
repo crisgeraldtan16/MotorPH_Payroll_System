@@ -25,14 +25,14 @@ public class PayrollPanel extends JPanel {
 
     private final MainFrame mainFrame;
 
-    // Light theme
+    // Light theme colors used in the payroll UI
     private static final Color BG = new Color(245, 247, 252);
     private static final Color CARD_BG = Color.WHITE;
     private static final Color BORDER = new Color(225, 230, 240);
     private static final Color TEXT = new Color(35, 45, 65);
     private static final Color MUTED = new Color(110, 120, 145);
 
-    // Status pill colors
+    // These colors are used for the payroll status pill
     private static final Color PILL_NEUTRAL_BG = new Color(235, 238, 245);
     private static final Color PILL_NEUTRAL_FG = new Color(90, 100, 120);
 
@@ -44,7 +44,10 @@ public class PayrollPanel extends JPanel {
 
     private List<Employee> employees;
 
-
+    /*
+     * This service handles payroll computation.
+     * The panel only calls the service instead of computing directly.
+     */
     private final PayrollService payrollService = new DefaultPayrollService();
 
     // Left selection
@@ -79,7 +82,7 @@ public class PayrollPanel extends JPanel {
     private DefaultTableModel monthTableModel;
     private JLabel monthTotalNetVal, monthTotalTaxVal, monthTotalGovVal, monthCountVal;
 
-    // Timecard tab (LIST + FORM inside one tab)
+    // Timecard tab
     private CardLayout timecardLayout = new CardLayout();
     private JPanel timecardView = new JPanel(timecardLayout);
 
@@ -94,13 +97,14 @@ public class PayrollPanel extends JPanel {
     private enum TcMode { ADD, EDIT }
     private TcMode tcMode = TcMode.ADD;
 
-    private AttendanceRecord selectedRecordKey; // used for edit/delete
+    // This keeps the original record reference when editing a timecard entry
+    private AttendanceRecord selectedRecordKey;
 
-    // Last computed record
+    // These store the last computed payroll result
     private PayrollRecord lastRecord;
     private Employee lastEmployee;
 
-    // Format input for manual entry
+    // Input format for manual timecard entry
     private static final DateTimeFormatter IN_DATE = DateTimeFormatter.ofPattern("MM/dd/yyyy");
     private static final DateTimeFormatter IN_TIME = DateTimeFormatter.ofPattern("H:mm");
 
@@ -234,7 +238,7 @@ public class PayrollPanel extends JPanel {
             tabs.setSelectedIndex(3);
         });
 
-        JButton computeAllBtn = new JButton("Compute All (Monthly)");
+        JButton computeAllBtn = new JButton("Compute All Employees (Monthly)");
         computeAllBtn.setFocusPainted(false);
         computeAllBtn.addActionListener(e -> computeAllEmployeesForMonth());
 
@@ -273,6 +277,10 @@ public class PayrollPanel extends JPanel {
         search.add(sTitle, BorderLayout.NORTH);
         search.add(searchField, BorderLayout.CENTER);
 
+        /*
+         * This employee table is read-only.
+         * The user selects an employee here before computing payroll.
+         */
         empTableModel = new DefaultTableModel(new Object[]{"Employee #", "Name", "Position", "Status"}, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
@@ -345,6 +353,10 @@ public class PayrollPanel extends JPanel {
         }
     }
 
+    /*
+     * This gets the selected Employee object
+     * based on the current selected row in the table.
+     */
     private Employee getSelectedEmployee() {
         int viewRow = employeeTable.getSelectedRow();
         if (viewRow == -1) return null;
@@ -365,7 +377,6 @@ public class PayrollPanel extends JPanel {
         return YearMonth.of(year, month);
     }
 
-    // ---------------- Compute Tab ----------------
     private JPanel buildComputeTab() {
         JPanel wrap = new JPanel(new BorderLayout(12, 12));
         wrap.setBackground(CARD_BG);
@@ -503,7 +514,6 @@ public class PayrollPanel extends JPanel {
         return row + 1;
     }
 
-    // ---------------- Payslip Tab ----------------
     private JPanel buildPayslipTab() {
         JPanel panel = new JPanel(new BorderLayout(12, 12));
         panel.setBackground(CARD_BG);
@@ -537,7 +547,6 @@ public class PayrollPanel extends JPanel {
         return panel;
     }
 
-    // ---------------- Monthly Summary Tab ----------------
     private JPanel buildMonthlySummaryTab() {
         JPanel panel = new JPanel(new BorderLayout(12, 12));
         panel.setBackground(CARD_BG);
@@ -596,7 +605,6 @@ public class PayrollPanel extends JPanel {
         return p;
     }
 
-    // ---------------- Timecard Tab (LIST + FORM) ----------------
     private JPanel buildTimecardTab() {
         timecardView = new JPanel(timecardLayout);
         timecardView.setBackground(CARD_BG);
@@ -653,7 +661,10 @@ public class PayrollPanel extends JPanel {
         toolbar.add(leftBtns, BorderLayout.WEST);
         toolbar.add(refreshBtn, BorderLayout.EAST);
 
-        // Table
+        /*
+         * This table shows manual attendance records
+         * used for payroll computation.
+         */
         timecardTableModel = new DefaultTableModel(
                 new Object[]{"Date", "Log In", "Log Out", "Late (min)", "Worked Hours"},
                 0
@@ -666,7 +677,6 @@ public class PayrollPanel extends JPanel {
         JScrollPane sp = new JScrollPane(timecardTable);
         sp.setBorder(BorderFactory.createLineBorder(BORDER));
 
-        // Totals card
         JPanel totalsCard = new JPanel(new GridLayout(1, 3, 12, 10));
         totalsCard.setBackground(new Color(250, 251, 253));
         totalsCard.setBorder(BorderFactory.createCompoundBorder(
@@ -691,7 +701,6 @@ public class PayrollPanel extends JPanel {
 
         clearTimecard();
 
-        // Actions
         refreshBtn.addActionListener(e -> {
             Employee emp = getSelectedEmployee();
             if (emp == null) {
@@ -872,6 +881,10 @@ public class PayrollPanel extends JPanel {
         }
     }
 
+    /*
+     * This validates and saves a manual timecard record.
+     * It supports both add and edit mode.
+     */
     private void saveTimecard() {
         Employee emp = getSelectedEmployee();
         if (emp == null) {
@@ -964,6 +977,10 @@ public class PayrollPanel extends JPanel {
         return t.format(IN_TIME);
     }
 
+    /*
+     * This reloads timecard entries for the selected employee and month,
+     * then updates the totals shown below the table.
+     */
     private void refreshTimecard(String employeeNo, YearMonth ym) {
         List<AttendanceEntry> entries = AttendanceUtil.loadEntriesForEmployeeMonth(employeeNo, ym);
 
@@ -1000,7 +1017,10 @@ public class PayrollPanel extends JPanel {
         if (timecardHoursVal != null) timecardHoursVal.setText("-");
     }
 
-    // ---------------- Actions ----------------
+    /*
+     * This computes payroll for the selected employee and month.
+     * If there is no attendance, no payroll record is created.
+     */
     private void computeSelectedEmployee() {
         Employee emp = getSelectedEmployee();
         if (emp == null) {
@@ -1010,7 +1030,6 @@ public class PayrollPanel extends JPanel {
 
         YearMonth ym = getSelectedMonth();
 
-        // ✅ Use service (abstraction). Service returns null when no attendance.
         PayrollRecord pr = payrollService.computeForEmployeeMonth(emp, ym);
 
         if (pr == null) {
@@ -1056,6 +1075,10 @@ public class PayrollPanel extends JPanel {
         tabs.setSelectedIndex(0);
     }
 
+    /*
+     * This computes payroll for all employees for the selected month
+     * and displays the results in the monthly summary tab.
+     */
     private void computeAllEmployeesForMonth() {
         YearMonth ym = getSelectedMonth();
 
@@ -1068,7 +1091,6 @@ public class PayrollPanel extends JPanel {
         int computedCount = 0;
 
         for (Employee emp : employees) {
-            // ✅ Skip employees with no attendance for the selected month
             PayrollRecord pr = payrollService.computeForEmployeeMonth(emp, ym);
             if (pr == null) continue;
 
@@ -1101,6 +1123,10 @@ public class PayrollPanel extends JPanel {
         tabs.setSelectedIndex(2);
     }
 
+    /*
+     * This saves the last computed payroll record
+     * to the payroll CSV file.
+     */
     private void saveLastRecord() {
         if (lastRecord == null) {
             JOptionPane.showMessageDialog(this, "No computed payroll record yet. Compute an employee first.", "Nothing to Save", JOptionPane.WARNING_MESSAGE);
@@ -1108,15 +1134,13 @@ public class PayrollPanel extends JPanel {
         }
 
         try {
-            // ✅ save through service
-            payrollService.saveRecord(lastRecord);
+            PayrollIOUtil.appendPayrollRecord(lastRecord);
 
             JOptionPane.showMessageDialog(this,
                     "Payroll record saved to: data/payroll_records.csv",
                     "Saved",
                     JOptionPane.INFORMATION_MESSAGE);
 
-            // optional: disable after saving to prevent duplicates
             if (saveRecordBtn != null) saveRecordBtn.setEnabled(false);
 
         } catch (Exception ex) {
@@ -1144,7 +1168,6 @@ public class PayrollPanel extends JPanel {
         setStatus("WAITING", PILL_NEUTRAL_BG, PILL_NEUTRAL_FG);
     }
 
-    // ---------------- UI updates ----------------
     private void updateComputeView(PayrollRecord pr, Employee emp) {
         empNoVal.setText(pr.getEmployeeNumber());
         nameVal.setText(pr.getEmployeeName());
@@ -1207,6 +1230,9 @@ public class PayrollPanel extends JPanel {
         return String.format("%,.2f", v);
     }
 
+    /*
+     * This formats the payroll result into a text payslip preview.
+     */
     private String formatPayslip(PayrollRecord pr, Employee emp) {
         StringBuilder sb = new StringBuilder();
 

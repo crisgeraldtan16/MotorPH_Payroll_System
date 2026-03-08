@@ -6,11 +6,19 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
+/*
+ * This utility class handles reading and writing
+ * user account data in users.csv.
+ */
 public class UserIOUtil {
 
     private static final String PATH = "data/users.csv";
     private static final String HEADER = "Username,Password,Role,Employee #";
 
+    /*
+     * This loads all users from the CSV file
+     * and converts them into User objects.
+     */
     public static List<User> loadUsers() {
         ensureFile();
 
@@ -49,6 +57,10 @@ public class UserIOUtil {
         return users;
     }
 
+    /*
+     * This checks if the username already exists
+     * to avoid duplicate user accounts.
+     */
     public static boolean usernameExists(String username) {
         if (username == null || username.trim().isEmpty()) return false;
 
@@ -60,6 +72,9 @@ public class UserIOUtil {
         return false;
     }
 
+    /*
+     * This adds a new user account to users.csv.
+     */
     public static void appendUser(User user) {
         ensureFile();
 
@@ -75,6 +90,10 @@ public class UserIOUtil {
         }
     }
 
+    /*
+     * This makes sure the users.csv file exists.
+     * If not, it creates the file with the correct header.
+     */
     private static void ensureFile() {
         try {
             File dir = new File("data");
@@ -96,6 +115,10 @@ public class UserIOUtil {
         return p[idx] == null ? "" : p[idx].trim();
     }
 
+    /*
+     * This makes values safer before writing them to CSV
+     * by removing commas and line breaks.
+     */
     private static String csv(String... vals) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < vals.length; i++) {

@@ -13,6 +13,7 @@ import java.util.List;
 
 public class LeaveApprovalPanel extends JPanel {
 
+    // Theme colors used for the panel UI
     private static final Color BG = new Color(245, 247, 252);
     private static final Color CARD_BG = Color.WHITE;
     private static final Color BORDER = new Color(225, 230, 240);
@@ -22,10 +23,10 @@ public class LeaveApprovalPanel extends JPanel {
     private DefaultTableModel model;
     private JTable table;
 
-    // Full reason viewer
+    // This text area shows the full leave reason of the selected request
     private JTextArea reasonViewer;
 
-    // Cache loaded requests
+    // This stores the currently loaded leave requests
     private List<LeaveRequest> cached;
 
     public LeaveApprovalPanel() {
@@ -94,6 +95,10 @@ public class LeaveApprovalPanel extends JPanel {
                 new EmptyBorder(14, 14, 14, 14)
         ));
 
+        /*
+         * The table is read-only so users cannot edit leave data directly.
+         * Approve and deny actions are handled through buttons.
+         */
         model = new DefaultTableModel(
                 new Object[]{"Request ID", "Employee #", "Name", "From", "To", "Reason", "Status", "Submitted", "Reviewed By"},
                 0
@@ -110,6 +115,10 @@ public class LeaveApprovalPanel extends JPanel {
 
         tableCard.add(sp, BorderLayout.CENTER);
 
+        /*
+         * When a row is selected, the full leave reason
+         * is shown in the lower panel.
+         */
         table.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) showSelectedReason();
         });
@@ -156,7 +165,10 @@ public class LeaveApprovalPanel extends JPanel {
         return split;
     }
 
-    // ✅ PUBLIC METHOD so MainFrame can auto-refresh this panel
+    /*
+     * This reloads all leave requests from storage
+     * and updates the table display.
+     */
     public void refreshData() {
         model.setRowCount(0);
 
@@ -185,6 +197,9 @@ public class LeaveApprovalPanel extends JPanel {
         }
     }
 
+    /*
+     * This shows the complete reason of the selected leave request.
+     */
     private void showSelectedReason() {
         if (table == null || model == null || reasonViewer == null) return;
 
@@ -218,6 +233,10 @@ public class LeaveApprovalPanel extends JPanel {
         reasonViewer.setCaretPosition(0);
     }
 
+    /*
+     * This updates the selected leave request status
+     * to approved or denied.
+     */
     private void updateSelected(LeaveRequest.Status newStatus) {
         User u = Session.getCurrentUser();
         if (u == null || !(u.isAdmin() || u.isHr())) {
@@ -264,6 +283,10 @@ public class LeaveApprovalPanel extends JPanel {
         refreshData();
     }
 
+    /*
+     * This shortens long reasons for table display
+     * so the table stays clean and readable.
+     */
     private String shorten(String s, int max) {
         if (s == null) return "";
         String t = s.trim();

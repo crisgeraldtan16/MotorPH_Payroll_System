@@ -13,6 +13,7 @@ import java.util.List;
 
 public class UserAccountsPanel extends JPanel {
 
+    // Theme colors used in this panel
     private static final Color BG = new Color(245, 247, 252);
     private static final Color CARD_BG = Color.WHITE;
     private static final Color BORDER = new Color(225, 230, 240);
@@ -25,6 +26,7 @@ public class UserAccountsPanel extends JPanel {
     private JComboBox<String> roleCombo;
     private JLabel selectedEmployeeInfo;
 
+    // This stores the loaded employee list for account creation
     private List<Employee> employees;
 
     public UserAccountsPanel() {
@@ -92,6 +94,10 @@ public class UserAccountsPanel extends JPanel {
         selectedEmployeeInfo = new JLabel("Select an employee.");
         selectedEmployeeInfo.setForeground(MUTED);
 
+        /*
+         * When a different employee is selected,
+         * the info label is updated automatically.
+         */
         employeeCombo.addActionListener(e -> updateSelectedEmployeeInfo());
 
         int row = 0;
@@ -145,6 +151,10 @@ public class UserAccountsPanel extends JPanel {
         return l;
     }
 
+    /*
+     * This reloads employees and repopulates the dropdown.
+     * Only IT users are allowed to access this panel.
+     */
     public void refreshData() {
         User current = Session.getCurrentUser();
         if (current == null || !current.isIt()) return;
@@ -176,6 +186,10 @@ public class UserAccountsPanel extends JPanel {
         );
     }
 
+    /*
+     * This validates the form and creates a new user account
+     * linked to the selected employee.
+     */
     private void createCredentials() {
         User current = Session.getCurrentUser();
         if (current == null || !current.isIt()) {

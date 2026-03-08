@@ -2,6 +2,10 @@ package motorph.util;
 
 import java.util.Set;
 
+/*
+ * This access policy is for probationary employees.
+ * They can only access employee-related screens in the system.
+ */
 public class ProbationaryEmployeeAccessPolicy extends BaseAccessPolicy {
 
     private static final Set<String> ALLOWED = Set.of(
@@ -15,6 +19,19 @@ public class ProbationaryEmployeeAccessPolicy extends BaseAccessPolicy {
         return ALLOWED.contains(screen);
     }
 
-    @Override public boolean canFileLeave() { return true; }
-    @Override public boolean canViewPayslip() { return true; }
+    /*
+     * Probationary employees are allowed to file leave requests.
+     */
+    @Override
+    public boolean canFileLeave() {
+        return true;
+    }
+
+    /*
+     * Probationary employees are allowed to view their payslip.
+     */
+    @Override
+    public boolean canViewPayslip() {
+        return true;
+    }
 }

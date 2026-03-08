@@ -12,6 +12,10 @@ public class LeaveIOUtil {
     private static final String PATH = "data/leaves.csv";
     private static final DateTimeFormatter TS = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
+    /*
+     * This method loads all leave requests from the CSV file
+     * and converts each row into a LeaveRequest object.
+     */
     public static List<LeaveRequest> loadAll() {
         ensureFile();
 
@@ -50,6 +54,10 @@ public class LeaveIOUtil {
         return list;
     }
 
+    /*
+     * This filters leave requests and returns only
+     * the records of the selected employee.
+     */
     public static List<LeaveRequest> loadForEmployee(String empNo) {
         List<LeaveRequest> all = loadAll();
         List<LeaveRequest> out = new ArrayList<>();
@@ -61,6 +69,9 @@ public class LeaveIOUtil {
         return out;
     }
 
+    /*
+     * This adds one new leave request to the CSV file.
+     */
     public static void append(LeaveRequest r) {
         ensureFile();
         try (PrintWriter pw = new PrintWriter(new FileWriter(PATH, true))) {
@@ -81,6 +92,10 @@ public class LeaveIOUtil {
         }
     }
 
+    /*
+     * This rewrites the whole leave file.
+     * It is used when updating approval status or editing records.
+     */
     public static void overwriteAll(List<LeaveRequest> list) {
         ensureFile();
         try (PrintWriter pw = new PrintWriter(new FileWriter(PATH, false))) {
@@ -104,14 +119,25 @@ public class LeaveIOUtil {
         }
     }
 
+    /*
+     * This creates a simple unique leave request ID.
+     */
     public static String newRequestId() {
         return "LR-" + System.currentTimeMillis();
     }
 
+    /*
+     * This returns the current date and time
+     * in the format used for leave records.
+     */
     public static String now() {
         return LocalDateTime.now().format(TS);
     }
 
+    /*
+     * This makes sure the leave CSV file exists.
+     * If not, it creates the file with the correct header.
+     */
     private static void ensureFile() {
         File dir = new File("data");
         if (!dir.exists()) dir.mkdirs();
@@ -131,8 +157,11 @@ public class LeaveIOUtil {
         return p[idx] == null ? "" : p[idx].trim();
     }
 
+    /*
+     * This makes values safer for CSV writing
+     * by removing commas and line breaks.
+     */
     private static String csv(String... vals) {
-        // simple CSV safe (replace commas/newlines)
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < vals.length; i++) {
             String v = (vals[i] == null) ? "" : vals[i];

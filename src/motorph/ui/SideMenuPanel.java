@@ -13,7 +13,7 @@ import java.awt.event.MouseEvent;
 
 public class SideMenuPanel extends JPanel {
 
-    //  LIGHTER MODERN THEME
+    // These colors are used for the side menu design
     private static final Color BG = new Color(235, 238, 245);
     private static final Color BTN_BG = new Color(255, 255, 255);
     private static final Color BTN_HOVER = new Color(225, 230, 240);
@@ -22,14 +22,14 @@ public class SideMenuPanel extends JPanel {
     private static final Color TEXT = new Color(35, 45, 65);
     private static final Color TEXT_MUTED = new Color(110, 120, 145);
 
-    // Admin/HR/IT buttons
+    // Buttons for admin/HR/IT side
     private JButton dashboardBtn;
     private JButton employeeBtn;
     private JButton payrollBtn;
     private JButton leaveApprovalsBtn;
     private JButton userAccountsBtn;
 
-    // Employee buttons
+    // Buttons for employee side
     private JButton empDashboardBtn;
     private JButton myPayslipBtn;
     private JButton requestLeaveBtn;
@@ -46,7 +46,9 @@ public class SideMenuPanel extends JPanel {
         add(buildMenu(mainFrame), BorderLayout.CENTER);
         add(buildLogout(mainFrame), BorderLayout.SOUTH);
 
-        // Default highlight depends on role
+        /*
+         * The default highlighted menu depends on the logged-in user's role.
+         */
         User u = Session.getCurrentUser();
         if (u != null && u.isEmployee()) {
             setActive(empDashboardBtn);
@@ -57,7 +59,6 @@ public class SideMenuPanel extends JPanel {
         }
     }
 
-    // ---------- Header ----------
     private JComponent buildBrandHeader() {
         JPanel header = new JPanel(new BorderLayout());
         header.setOpaque(false);
@@ -82,7 +83,10 @@ public class SideMenuPanel extends JPanel {
         subtitle.setFont(new Font("Arial", Font.PLAIN, 12));
         subtitle.setForeground(TEXT_MUTED);
 
-        // Logged in user info
+        /*
+         * This shows the logged-in user's name and role
+         * at the top of the side menu.
+         */
         User u = Session.getCurrentUser();
 
         String displayName = "-";
@@ -159,7 +163,6 @@ public class SideMenuPanel extends JPanel {
         }
     }
 
-    // ---------- Menu ----------
     private JComponent buildMenu(MainFrame mainFrame) {
         JPanel menu = new JPanel();
         menu.setOpaque(false);
@@ -168,7 +171,10 @@ public class SideMenuPanel extends JPanel {
         User u = Session.getCurrentUser();
         if (u == null) return menu;
 
-        // ✅ Use policy to decide what buttons show
+        /*
+         * The access policy decides which menu buttons
+         * should be shown for the current user.
+         */
         boolean canEmpDash = u.getAccessPolicy().canOpenScreen("EMPLOYEE_DASHBOARD");
         boolean canPayslip = u.getAccessPolicy().canOpenScreen("MY_PAYSLIP");
         boolean canLeaveRequest = u.getAccessPolicy().canOpenScreen("LEAVE_REQUEST");
@@ -179,7 +185,7 @@ public class SideMenuPanel extends JPanel {
         boolean canLeaveApproval = u.getAccessPolicy().canOpenScreen("LEAVE_APPROVAL");
         boolean canUserAccounts = u.getAccessPolicy().canOpenScreen("USER_ACCOUNTS");
 
-        // EMPLOYEE-type menu
+        // Employee menu
         if (canEmpDash || canPayslip || canLeaveRequest) {
 
             if (canEmpDash) {
@@ -214,7 +220,7 @@ public class SideMenuPanel extends JPanel {
             return menu;
         }
 
-        // ADMIN/HR/FINANCE/IT menu
+        // Admin/HR/Finance/IT menu
         if (canDashboard) {
             dashboardBtn = createMenuButton("Dashboard");
             dashboardBtn.addActionListener(e -> {
@@ -268,7 +274,6 @@ public class SideMenuPanel extends JPanel {
         return menu;
     }
 
-    // ---------- Logout ----------
     private JComponent buildLogout(MainFrame mainFrame) {
         JPanel bottom = new JPanel();
         bottom.setOpaque(false);
@@ -295,7 +300,6 @@ public class SideMenuPanel extends JPanel {
         return bottom;
     }
 
-    // ---------- Buttons ----------
     private JButton createMenuButton(String text) {
         JButton btn = new JButton(text);
         btn.setFocusPainted(false);
@@ -336,6 +340,10 @@ public class SideMenuPanel extends JPanel {
         return btn;
     }
 
+    /*
+     * This adds a hover effect to buttons
+     * for better user interaction.
+     */
     private void addHoverEffect(JButton btn, Color normal, Color hover) {
         btn.addMouseListener(new MouseAdapter() {
             @Override
@@ -350,12 +358,13 @@ public class SideMenuPanel extends JPanel {
         });
     }
 
-    // ---------- Active State ----------
+    /*
+     * This updates the active button style
+     * so the current screen is highlighted.
+     */
     private void setActive(JButton activeBtn) {
         JButton[] all = {
-                // Admin/HR/IT
                 dashboardBtn, employeeBtn, payrollBtn, leaveApprovalsBtn, userAccountsBtn,
-                // Employee
                 empDashboardBtn, myPayslipBtn, requestLeaveBtn
         };
 

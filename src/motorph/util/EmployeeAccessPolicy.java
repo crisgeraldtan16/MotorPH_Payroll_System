@@ -1,5 +1,9 @@
 package motorph.util;
 
+/*
+ * This access policy is for employee users.
+ * It only allows screens intended for employees.
+ */
 public class EmployeeAccessPolicy extends BaseAccessPolicy {
 
     @Override

@@ -8,6 +8,11 @@ import java.time.YearMonth;
 
 public class PayrollCalculator {
 
+    /*
+     * This method computes the employee's monthly payroll
+     * based on attendance, late minutes, salary, allowances,
+     * government deductions, and withholding tax.
+     */
     public static PayrollRecord computeMonthlyPayroll(Employee emp, YearMonth month, int daysPresent, int lateMinutes) {
         PayrollRecord pr = new PayrollRecord();
         pr.setEmployeeNumber(emp.getEmployeeNumber());
@@ -22,9 +27,10 @@ public class PayrollCalculator {
         pr.setDaysPresent(daysPresent);
         pr.setLateMinutes(lateMinutes);
 
-        // --------------------------------------------------
-        // PRORATION LOGIC (FIX)
-        // --------------------------------------------------
+        /*
+         * This part prorates the salary based on
+         * the number of weekdays in the selected month.
+         */
         int workingDaysInMonth = countWeekdaysInMonth(month);
         if (workingDaysInMonth <= 0) workingDaysInMonth = 22; // safety fallback
 
@@ -38,9 +44,10 @@ public class PayrollCalculator {
         pr.setMonthlyBasicSalary(round2(earnedBasic));
         pr.setTotalAllowancesMonthly(round2(earnedAllowances));
 
-        // --------------------------------------------------
-        // LATE DEDUCTION
-        // --------------------------------------------------
+        /*
+         * This calculates the deduction for late minutes
+         * based on the employee's hourly rate.
+         */
         double hourlyRate = emp.getHourlyRate();
         double lateDeduction = (lateMinutes / 60.0) * hourlyRate;
 
@@ -51,16 +58,15 @@ public class PayrollCalculator {
 
         pr.setLateDeduction(round2(lateDeduction));
 
-        // --------------------------------------------------
-        // GROSS PAY (PRORATED)
-        // --------------------------------------------------
+        // Gross pay after subtracting late deduction
         double grossPay = earnedBeforeLate - lateDeduction;
         if (grossPay < 0) grossPay = 0;
         pr.setGrossPay(round2(grossPay));
 
-        // --------------------------------------------------
-        // GOVERNMENT DEDUCTIONS (BASED ON EARNED BASIC)
-        // --------------------------------------------------
+        /*
+         * Government deductions are based on earned basic salary,
+         * not on the full original monthly salary.
+         */
         double sss = computeSSS(earnedBasic);
         double philHealth = computePhilHealthEmployeeShare(earnedBasic);
         double pagIbig = computePagIbigEmployeeShare(earnedBasic);
@@ -72,9 +78,7 @@ public class PayrollCalculator {
         double totalGov = sss + philHealth + pagIbig;
         pr.setTotalDeductionsBeforeTax(round2(totalGov));
 
-        // --------------------------------------------------
-        // TAX
-        // --------------------------------------------------
+        // Taxable income is gross pay minus government deductions
         double taxableIncome = grossPay - totalGov;
         if (taxableIncome < 0) taxableIncome = 0;
         pr.setTaxableIncome(round2(taxableIncome));
@@ -82,9 +86,7 @@ public class PayrollCalculator {
         double withholdingTax = computeWithholdingTax(taxableIncome);
         pr.setWithholdingTax(round2(withholdingTax));
 
-        // --------------------------------------------------
-        // NET PAY
-        // --------------------------------------------------
+        // Final net pay after all deductions
         double netPay = grossPay - totalGov - withholdingTax;
         if (netPay < 0) netPay = 0;
         pr.setNetPay(round2(netPay));
@@ -92,9 +94,10 @@ public class PayrollCalculator {
         return pr;
     }
 
-    // --------------------------------------------------
-    // COUNT WEEKDAYS (Mon–Fri) IN A MONTH
-    // --------------------------------------------------
+    /*
+     * This counts all weekdays from Monday to Friday
+     * in the selected month.
+     */
     private static int countWeekdaysInMonth(YearMonth ym) {
         int count = 0;
         for (int day = 1; day <= ym.lengthOfMonth(); day++) {
@@ -106,7 +109,10 @@ public class PayrollCalculator {
         return count;
     }
 
-    // ------------------ SSS ------------------
+    /*
+     * This computes the employee share for SSS
+     * based on the salary bracket table.
+     */
     public static double computeSSS(double monthlyCompensation) {
         double c = monthlyCompensation;
 
@@ -159,7 +165,9 @@ public class PayrollCalculator {
         return 1125.00;
     }
 
-    // ------------------ PhilHealth ------------------
+    /*
+     * This computes the employee share for PhilHealth.
+     */
     public static double computePhilHealthEmployeeShare(double monthlyBasicSalary) {
         double premium = monthlyBasicSalary * 0.03;
 
@@ -172,14 +180,19 @@ public class PayrollCalculator {
         return premium * 0.5;
     }
 
-    // ------------------ Pag-IBIG ------------------
+    /*
+     * This computes the employee share for Pag-IBIG.
+     */
     public static double computePagIbigEmployeeShare(double monthlyBasicSalary) {
         if (monthlyBasicSalary <= 0) return 0;
         double rate = (monthlyBasicSalary <= 1500) ? 0.01 : 0.02;
         return monthlyBasicSalary * rate;
     }
 
-    // ------------------ Withholding Tax ------------------
+    /*
+     * This computes the withholding tax
+     * based on the taxable monthly income.
+     */
     public static double computeWithholdingTax(double taxableMonthlyIncome) {
         double x = taxableMonthlyIncome;
 
@@ -192,6 +205,10 @@ public class PayrollCalculator {
         return 200833.33 + (x - 666667) * 0.35;
     }
 
+    /*
+     * This rounds values into 2 decimal places
+     * for cleaner payroll output.
+     */
     private static double round2(double v) {
         return Math.round(v * 100.0) / 100.0;
     }

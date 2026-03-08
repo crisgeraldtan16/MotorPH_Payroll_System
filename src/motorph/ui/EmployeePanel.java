@@ -19,20 +19,22 @@ public class EmployeePanel extends JPanel {
 
     private final MainFrame mainFrame;
 
+    /*
+     * CardLayout is used to switch between the list view
+     * and the form view inside the same panel.
+     */
     private final CardLayout viewLayout = new CardLayout();
     private final JPanel viewPanel = new JPanel(viewLayout);
 
-    // THEME (light)
     private static final Color BG = new Color(245, 247, 252);
     private static final Color CARD_BG = Color.WHITE;
     private static final Color BORDER = new Color(225, 230, 240);
     private static final Color TEXT = new Color(35, 45, 65);
     private static final Color MUTED = new Color(110, 120, 145);
 
-    // Data
+    // This list stores all employee records loaded from the CSV file.
     private List<Employee> employees;
 
-    // List view
     private DefaultTableModel tableModel;
     private JTable employeeTable;
     private TableRowSorter<DefaultTableModel> sorter;
@@ -40,7 +42,6 @@ public class EmployeePanel extends JPanel {
 
     private JButton addBtn, viewBtn, editBtn, deleteBtn;
 
-    // Form view (tabs)
     private JTextField empNoField, lastNameField, firstNameField, addressField;
     private JFormattedTextField birthdayField, phoneField;
 
@@ -54,6 +55,10 @@ public class EmployeePanel extends JPanel {
     private JButton saveBtn, cancelBtn;
     private JLabel formTitle;
 
+    /*
+     * Mode tells whether the form is currently used
+     * for adding, editing, or viewing an employee.
+     */
     private enum Mode { ADD, EDIT, VIEW }
     private Mode mode = Mode.VIEW;
     private Employee selectedEmployee = null;
@@ -76,13 +81,11 @@ public class EmployeePanel extends JPanel {
         showListView();
     }
 
-    // ===================== LIST VIEW =====================
     private JPanel buildListView() {
         JPanel root = new JPanel(new BorderLayout(14, 14));
         root.setBackground(BG);
         root.setBorder(new EmptyBorder(18, 18, 18, 18));
 
-        // Header (not a card)
         JPanel headerRow = new JPanel(new BorderLayout(12, 12));
         headerRow.setOpaque(false);
 
@@ -110,14 +113,12 @@ public class EmployeePanel extends JPanel {
 
         root.add(headerRow, BorderLayout.NORTH);
 
-        // Main card (toolbar + table)
         JPanel card = createCard(new BorderLayout(12, 12));
         card.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(BORDER),
                 new EmptyBorder(14, 14, 14, 14)
         ));
 
-        // Toolbar row inside card
         JPanel toolbar = new JPanel(new BorderLayout(12, 12));
         toolbar.setOpaque(false);
 
@@ -155,7 +156,10 @@ public class EmployeePanel extends JPanel {
         toolbar.add(buttonRow, BorderLayout.WEST);
         toolbar.add(searchPanel, BorderLayout.EAST);
 
-        // Table
+        /*
+         * The table is read-only so users cannot edit data directly here.
+         * Editing should only happen through the form.
+         */
         tableModel = new DefaultTableModel(
                 new Object[]{"Employee #", "Name", "Department/Position", "Status"},
                 0
@@ -175,20 +179,20 @@ public class EmployeePanel extends JPanel {
         JScrollPane sp = new JScrollPane(employeeTable);
         sp.setBorder(BorderFactory.createLineBorder(BORDER));
 
-        // Add to card
         card.add(toolbar, BorderLayout.NORTH);
         card.add(sp, BorderLayout.CENTER);
 
         root.add(card, BorderLayout.CENTER);
 
-        // Search filter
+        /*
+         * This makes the search work while the user is typing.
+         */
         searchField.getDocument().addDocumentListener(new DocumentListener() {
             @Override public void insertUpdate(DocumentEvent e) { applySearch(); }
             @Override public void removeUpdate(DocumentEvent e) { applySearch(); }
             @Override public void changedUpdate(DocumentEvent e) { applySearch(); }
         });
 
-        // Enable/disable buttons based on selection
         setActionButtonsEnabled(false);
         employeeTable.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
@@ -196,7 +200,6 @@ public class EmployeePanel extends JPanel {
             }
         });
 
-        // Actions
         addBtn.addActionListener(e -> startAdd());
         viewBtn.addActionListener(e -> startView());
         editBtn.addActionListener(e -> startEdit());
@@ -242,6 +245,9 @@ public class EmployeePanel extends JPanel {
         sorter.setRowFilter(RowFilter.regexFilter("(?i)" + java.util.regex.Pattern.quote(text)));
     }
 
+    /*
+     * This reloads the employee data into the table.
+     */
     private void refreshTable() {
         tableModel.setRowCount(0);
         for (Employee e : employees) {
@@ -255,6 +261,9 @@ public class EmployeePanel extends JPanel {
         setActionButtonsEnabled(false);
     }
 
+    /*
+     * This gets the actual Employee object based on the selected table row.
+     */
     private Employee getSelectedEmployeeFromTable() {
         int viewRow = employeeTable.getSelectedRow();
         if (viewRow == -1) return null;
@@ -268,13 +277,11 @@ public class EmployeePanel extends JPanel {
         return null;
     }
 
-    // ===================== FORM VIEW (TABBED) =====================
     private JPanel buildFormView() {
         JPanel root = new JPanel(new BorderLayout(14, 14));
         root.setBackground(BG);
         root.setBorder(new EmptyBorder(18, 18, 18, 18));
 
-        // Header
         JPanel header = new JPanel(new BorderLayout(12, 12));
         header.setOpaque(false);
 
@@ -291,13 +298,16 @@ public class EmployeePanel extends JPanel {
 
         root.add(header, BorderLayout.NORTH);
 
-        // Card with tabs
         JPanel card = createCard(new BorderLayout(12, 12));
         card.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(BORDER),
                 new EmptyBorder(14, 14, 14, 14)
         ));
 
+        /*
+         * Tabs are used to organize employee information
+         * into smaller sections to make the form cleaner.
+         */
         JTabbedPane tabs = new JTabbedPane();
         tabs.setBackground(CARD_BG);
 
@@ -307,7 +317,6 @@ public class EmployeePanel extends JPanel {
 
         card.add(tabs, BorderLayout.CENTER);
 
-        // Bottom buttons (inside the card for cleaner UI)
         JPanel bottom = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         bottom.setOpaque(false);
 
@@ -341,8 +350,8 @@ public class EmployeePanel extends JPanel {
         lastNameField = new JTextField(18);
         firstNameField = new JTextField(18);
 
-        birthdayField = createMaskedField("##/##/####"); // MM/dd/yyyy
-        phoneField = createMaskedField("###-###-###");   // example format
+        birthdayField = createMaskedField("##/##/####");
+        phoneField = createMaskedField("###-###-###");
 
         addressField = new JTextField(18);
 
@@ -469,6 +478,10 @@ public class EmployeePanel extends JPanel {
         return wrapper;
     }
 
+    /*
+     * MaskFormatter helps enforce the correct input format
+     * for fields like birthday and phone number.
+     */
     private JFormattedTextField createMaskedField(String mask) {
         try {
             MaskFormatter formatter = new MaskFormatter(mask);
@@ -481,7 +494,6 @@ public class EmployeePanel extends JPanel {
         }
     }
 
-    // ===================== VIEW SWITCH =====================
     private void showListView() {
         employees = CSVUtil.loadEmployees();
         refreshTable();
@@ -494,7 +506,6 @@ public class EmployeePanel extends JPanel {
         viewLayout.show(viewPanel, "FORM");
     }
 
-    // ===================== CRUD ACTIONS =====================
     private void startAdd() {
         mode = Mode.ADD;
         formTitle.setText("Add New Employee");
@@ -567,6 +578,10 @@ public class EmployeePanel extends JPanel {
         }
     }
 
+    /*
+     * This validates the form before saving.
+     * It handles both adding a new employee and editing an existing one.
+     */
     private void saveEmployee() {
         String empNo = empNoField.getText().trim();
         String lastName = lastNameField.getText().trim();
@@ -619,6 +634,10 @@ public class EmployeePanel extends JPanel {
         showListView();
     }
 
+    /*
+     * This copies the values from the form fields
+     * into the Employee object.
+     */
     private void fillFromForm(Employee e, double basic, double rice, double phoneA, double cloth, double grossSemi, double hourly) {
         e.setEmployeeNumber(empNoField.getText().trim());
         e.setLastName(lastNameField.getText().trim());
@@ -694,6 +713,10 @@ public class EmployeePanel extends JPanel {
         if (hourlyField != null) hourlyField.setText("0");
     }
 
+    /*
+     * This enables or disables all form fields
+     * depending on the current mode.
+     */
     private void setFormEditable(boolean editable) {
         lastNameField.setEditable(editable);
         firstNameField.setEditable(editable);
@@ -718,6 +741,10 @@ public class EmployeePanel extends JPanel {
         hourlyField.setEditable(editable);
     }
 
+    /*
+     * This checks if the entered birthday is a valid date
+     * using MM/dd/yyyy format.
+     */
     private boolean isValidDate(String date) {
         SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy");
         sdf.setLenient(false);
@@ -729,6 +756,10 @@ public class EmployeePanel extends JPanel {
         }
     }
 
+    /*
+     * This converts the text input into a number
+     * and also checks that the value is not negative.
+     */
     private Double parseMoney(String text, String fieldName) {
         String t = text.trim();
         if (t.isEmpty()) t = "0";

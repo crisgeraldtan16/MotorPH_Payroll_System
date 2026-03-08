@@ -21,6 +21,7 @@ import java.util.List;
 
 public class EmployeeDashboardPanel extends JPanel {
 
+    // Theme colors used for the employee dashboard UI
     private static final Color BG = new Color(245, 247, 252);
     private static final Color CARD_BG = Color.WHITE;
     private static final Color BORDER = new Color(225, 230, 240);
@@ -101,22 +102,18 @@ public class EmployeeDashboardPanel extends JPanel {
         JPanel body = new JPanel(new BorderLayout(14, 14));
         body.setOpaque(false);
 
-        // top cards
         JPanel cards = new JPanel(new GridLayout(1, 4, 12, 12));
         cards.setOpaque(false);
 
-        // Profile card values
         empNoVal = value();
         nameVal = value();
         positionVal = value();
         statusVal = value();
 
-        // Leave card values
         pendingVal = bigValue();
         approvedVal = bigValue();
         deniedVal = bigValue();
 
-        // Payroll card values
         payrollMonthVal = value();
         grossVal = value();
         govVal = value();
@@ -125,7 +122,6 @@ public class EmployeeDashboardPanel extends JPanel {
         netVal.setFont(new Font("Arial", Font.BOLD, 18));
         netVal.setForeground(TEXT);
 
-        // Attendance card values
         attDateVal = value();
         attStatusVal = value();
         timeInVal = value();
@@ -138,7 +134,6 @@ public class EmployeeDashboardPanel extends JPanel {
 
         body.add(cards, BorderLayout.NORTH);
 
-        // Quick actions row
         JPanel quick = new JPanel(new GridLayout(1, 2, 12, 12));
         quick.setOpaque(false);
 
@@ -317,6 +312,10 @@ public class EmployeeDashboardPanel extends JPanel {
         return l;
     }
 
+    /*
+     * This handles the Time In button.
+     * It records the employee's attendance for today and refreshes the dashboard.
+     */
     private void handleTimeIn() {
         try {
             Employee emp = getCurrentEmployee();
@@ -328,6 +327,10 @@ public class EmployeeDashboardPanel extends JPanel {
         }
     }
 
+    /*
+     * This handles the Time Out button.
+     * It updates today's attendance record and refreshes the panel.
+     */
     private void handleTimeOut() {
         try {
             Employee emp = getCurrentEmployee();
@@ -339,6 +342,10 @@ public class EmployeeDashboardPanel extends JPanel {
         }
     }
 
+    /*
+     * This gets the currently logged-in employee from the session.
+     * It also checks if the current user is really an employee.
+     */
     private Employee getCurrentEmployee() {
         User u = Session.getCurrentUser();
         if (u == null || !u.isEmployee()) {
@@ -353,6 +360,10 @@ public class EmployeeDashboardPanel extends JPanel {
         return emp;
     }
 
+    /*
+     * This method refreshes all employee dashboard data,
+     * including profile, leave summary, payroll, and attendance.
+     */
     private void refresh() {
         User u = Session.getCurrentUser();
         if (u == null || !u.isEmployee()) {
@@ -392,7 +403,6 @@ public class EmployeeDashboardPanel extends JPanel {
             statusVal.setText("-");
         }
 
-        // Leave summary
         int pending = 0, approved = 0, denied = 0;
         List<LeaveRequest> leaves = LeaveIOUtil.loadForEmployee(empNo);
         for (LeaveRequest r : leaves) {
@@ -404,7 +414,6 @@ public class EmployeeDashboardPanel extends JPanel {
         approvedVal.setText(String.valueOf(approved));
         deniedVal.setText(String.valueOf(denied));
 
-        // Latest payroll
         PayrollRecord latest = PayrollIOUtil.findLatestForEmployee(empNo);
         if (latest == null) {
             payrollMonthVal.setText("No records");
@@ -420,12 +429,15 @@ public class EmployeeDashboardPanel extends JPanel {
             netVal.setText(money(latest.getNetPay()));
         }
 
-        // Attendance card
         refreshAttendance(empNo);
 
         lastUpdatedVal.setText("Last updated: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
     }
 
+    /*
+     * This updates the attendance card based on today's record.
+     * It also enables or disables the Time In and Time Out buttons properly.
+     */
     private void refreshAttendance(String empNo) {
         attDateVal.setText(String.valueOf(LocalDate.now()));
 

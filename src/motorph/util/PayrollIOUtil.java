@@ -5,13 +5,16 @@ import motorph.model.PayrollRecord;
 import java.io.*;
 import java.time.YearMonth;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 public class PayrollIOUtil {
 
     private static final String PATH = "data/payroll_records.csv";
 
+    /*
+     * This method adds one payroll record
+     * to the payroll CSV file.
+     */
     public static void appendPayrollRecord(PayrollRecord pr) {
         ensureFile();
 
@@ -22,6 +25,10 @@ public class PayrollIOUtil {
         }
     }
 
+    /*
+     * This loads payroll records of one employee
+     * for the selected month.
+     */
     public static List<PayrollRecord> loadPayrollRecordsForEmployeeMonth(String empNo, YearMonth ym) {
         ensureFile();
 
@@ -49,7 +56,10 @@ public class PayrollIOUtil {
         return out;
     }
 
-    // ✅ ADDED (ONLY WHAT WAS MISSING)
+    /*
+     * This finds the latest payroll record
+     * of a specific employee.
+     */
     public static PayrollRecord findLatestForEmployee(String empNo) {
         ensureFile();
 
@@ -72,7 +82,6 @@ public class PayrollIOUtil {
                 if (latest == null) {
                     latest = pr;
                 } else {
-                    // compare YearMonth (latest month wins)
                     if (pr.getMonth() != null && latest.getMonth() != null
                             && pr.getMonth().isAfter(latest.getMonth())) {
                         latest = pr;
@@ -86,6 +95,10 @@ public class PayrollIOUtil {
         return latest;
     }
 
+    /*
+     * This formats a payroll record into
+     * a readable payslip text output.
+     */
     public static String formatPayslipText(PayrollRecord pr) {
         StringBuilder sb = new StringBuilder();
         sb.append("=========== MOTORPH PAYSLIP (Monthly) ===========\n");
@@ -120,7 +133,7 @@ public class PayrollIOUtil {
         return sb.toString();
     }
 
-    // ---------------- CSV ----------------
+    // This converts a PayrollRecord object into one CSV row.
     private static String toCsv(PayrollRecord pr) {
         return csv(
                 pr.getEmployeeNumber(),
@@ -142,6 +155,7 @@ public class PayrollIOUtil {
         );
     }
 
+    // This converts CSV data back into a PayrollRecord object.
     private static PayrollRecord fromCsv(String[] p) {
         PayrollRecord pr = new PayrollRecord();
         pr.setEmployeeNumber(get(p, 0));
@@ -167,6 +181,10 @@ public class PayrollIOUtil {
         return pr;
     }
 
+    /*
+     * This makes sure the payroll CSV file exists.
+     * If not, it creates the file with the correct header.
+     */
     private static void ensureFile() {
         File dir = new File("data");
         if (!dir.exists()) dir.mkdirs();
@@ -194,6 +212,7 @@ public class PayrollIOUtil {
         try { return Double.parseDouble(s.trim()); } catch (Exception e) { return 0; }
     }
 
+    // This makes text safer before writing it into CSV.
     private static String csv(String... vals) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < vals.length; i++) {

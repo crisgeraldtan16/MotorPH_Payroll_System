@@ -1,12 +1,6 @@
 Request ID,Employee #,Employee Name,From,To,Reason,Status,Submitted At,Reviewed By,Reviewed At
-LR-1770395022582,10001,Manuel III Garcia,2024-06-20,2024-06-21,School meeting,DENIED,2026-02-07 01:23:42,admin,2026-02-08 18:38:37
-LR-1770463394105,10002,Antonio Lim,2024-07-16,2024-07-20,knjszvjkbsdbnvxjkdvbzsjkvbfdvjbsfdjvbzfskdjvbzkfjvbfkjvbfsjzkbzfkjvzbfvjfvbkdzfbvkxdfbvkdjfbvfdv,DENIED,2026-02-07 20:23:14,admin,2026-02-08 18:38:39
-LR-1770464031497,10002,Antonio Lim,2024-07-07,2024-07-13,dfdsfd,DENIED,2026-02-07 20:33:51,admin,2026-02-08 18:38:42
-LR-1770543259406,10034,Beatriz Santos,2024-07-08,2024-07-14,dfsadfszdfdzsdfzsdgzfsdvfvzfvfvxvxf emp10034,DENIED,2026-02-08 18:34:19,admin,2026-02-08 18:38:46
-LR-1770732527131,10001,Manuel III Garcia,2024-12-10,2025-01-04,Vacation,DENIED,2026-02-10 23:08:47,admin,2026-02-10 23:09:26
-LR-1771679583863,10001,Manuel III Garcia,2024-08-21,2024-08-22,fdfbzdhfjbdhfzbkdhfbsdhfbzsdhfbdskfsdkhf feb21,APPROVED,2026-02-21 22:13:03,admin,2026-02-21 22:13:40
-LR-1771683177357,10001,Manuel III Garcia,2026-02-21,2026-02-22,efefefewfwefef,APPROVED,2026-02-21 23:12:57,admin,2026-02-21 23:16:30
-LR-1771683364554,10034,Beatriz Santos,2026-02-21,2026-02-21,sdffzsdfsgsfgdfgdfgdfgfg,APPROVED,2026-02-21 23:16:04,admin,2026-02-21 23:16:32
-LR-1772630842645,10001,Manuel III Garcia,2026-03-04,2026-03-10,huhjhjvgvjg,APPROVED,2026-03-04 22:27:22,admin,2026-03-04 22:28:12
-LR-1772940089153,10001,Manuel III Garcia,2026-03-08,2026-03-08,Vacation,APPROVED,2026-03-08 12:21:29,admin,2026-03-08 12:21:48
-LR-1772945067482,10034,Beatriz Santos,2026-03-08,2026-03-08,dfdfdsf,PENDING,2026-03-08 13:44:27,,
+LR-1772954227562,10033,Carlos Ian Martinez,2026-03-08,2026-03-09,Family emergency requiring my immediate attention.,APPROVED,2026-03-08 16:17:07,admin,2026-03-08 16:19:21
+LR-1772954255078,10001,Manuel III Garcia,2026-03-13,2026-03-13,I am feeling unwell and need to rest and recover.,APPROVED,2026-03-08 16:17:35,admin,2026-03-08 16:19:24
+LR-1772954286405,10002,Antonio Lim,2026-03-15,2026-03-15,Scheduled legal or government office appointment.,APPROVED,2026-03-08 16:18:06,admin,2026-03-08 16:19:26
+LR-1772954316269,10004,Isabella Reyes,2026-03-27,2026-03-27,I need to accompany a family member to an appointment.,APPROVED,2026-03-08 16:18:36,hr1,2026-03-08 16:26:07
+LR-1772954337491,10005,Eduard Hernandez,2026-03-28,2026-03-28,I am experiencing flu symptoms and need to rest.,APPROVED,2026-03-08 16:18:57,hr1,2026-03-08 16:26:05
