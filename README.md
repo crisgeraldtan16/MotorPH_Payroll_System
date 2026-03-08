@@ -172,6 +172,7 @@ Reference links:
 - PhilHealth Premium Contribution: https://docs.google.com/spreadsheets/d/1f5IumqRUQWjtMCpg93bBZSanDlDtQkhYpwi8Pq4J3pc/edit?usp=sharing
 - Pag-IBIG Contribution Table: https://docs.google.com/spreadsheets/d/1T46Ob-IsEgCod2dlHhWkt9v-m4FJxvWrEmJxRH1QW7A/edit?usp=sharing
 - BIR Withholding Tax Table: https://docs.google.com/spreadsheets/d/1gUyIQ7HiO-LAoYkbns65U4cGygT-AVvEb8a0ptK1fpI/edit?usp=sharing
+- Attendance Records (Year 2024): https://docs.google.com/spreadsheets/d/1VZiyPdpSgXgIDWSwMCCoiyJeVIqUpvGSxeftG3THoC4/edit?usp=sharing
 
 
 
