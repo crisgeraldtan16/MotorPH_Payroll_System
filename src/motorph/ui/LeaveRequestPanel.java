@@ -346,4 +346,8 @@ public class LeaveRequestPanel extends JPanel {
         if (s.length() <= max) return s;
         return s.substring(0, max) + "...";
     }
+
+    public void refreshData() {
+        refresh();
+    }
 }

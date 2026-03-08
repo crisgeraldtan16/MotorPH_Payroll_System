@@ -66,10 +66,12 @@ public class SideMenuPanel extends JPanel {
         logo.setPreferredSize(new Dimension(42, 42));
         logo.setBackground(BTN_ACTIVE);
 
-        JLabel logoText = new JLabel("M");
-        logoText.setFont(new Font("Arial", Font.BOLD, 18));
+        JLabel logoText = new JLabel("M", SwingConstants.CENTER);
+        logoText.setFont(new Font("Arial", Font.BOLD, 35));
         logoText.setForeground(Color.WHITE);
-        logo.add(logoText);
+
+        logo.setLayout(new BorderLayout());
+        logo.add(logoText, BorderLayout.CENTER);
 
         JLabel title = new JLabel("MotorPH");
         title.setFont(new Font("Arial", Font.BOLD, 18));

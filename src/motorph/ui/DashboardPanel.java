@@ -378,4 +378,8 @@ public class DashboardPanel extends JPanel {
             ((MainFrame) window).showContent(screenName);
         }
     }
+
+    public void refreshData() {
+        refreshDashboard();
+    }
 }

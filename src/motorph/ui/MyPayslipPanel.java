@@ -209,4 +209,8 @@ public class MyPayslipPanel extends JPanel {
     private String money(double v) {
         return String.format("%,.2f", v);
     }
+
+    public void refreshData() {
+        refresh();
+    }
 }

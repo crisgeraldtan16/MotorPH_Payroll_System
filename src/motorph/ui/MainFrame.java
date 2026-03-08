@@ -15,6 +15,16 @@ public class MainFrame extends JFrame {
     private JPanel contentCards;
     private CardLayout contentLayout;
 
+    // Keep panel references so we can refresh them before showing
+    private DashboardPanel dashboardPanel;
+    private EmployeePanel employeePanel;
+    private PayrollPanel payrollPanel;
+    private LeaveApprovalPanel leaveApprovalPanel;
+
+    private EmployeeDashboardPanel employeeDashboardPanel;
+    private MyPayslipPanel myPayslipPanel;
+    private LeaveRequestPanel leaveRequestPanel;
+
     public MainFrame() {
         setTitle("MotorPH Employee Payroll System");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -37,16 +47,26 @@ public class MainFrame extends JFrame {
         contentCards = new JPanel(contentLayout);
         contentCards.setBackground(new Color(245, 247, 252));
 
+        // Create panel instances once
+        dashboardPanel = new DashboardPanel();
+        employeePanel = new EmployeePanel(this);
+        payrollPanel = new PayrollPanel(this);
+        leaveApprovalPanel = new LeaveApprovalPanel();
+
+        employeeDashboardPanel = new EmployeeDashboardPanel();
+        myPayslipPanel = new MyPayslipPanel();
+        leaveRequestPanel = new LeaveRequestPanel();
+
         // Admin/HR screens
-        contentCards.add(new DashboardPanel(), "DASHBOARD");
-        contentCards.add(new EmployeePanel(this), "EMPLOYEE");
-        contentCards.add(new PayrollPanel(this), "PAYROLL");
-        contentCards.add(new LeaveApprovalPanel(), "LEAVE_APPROVAL");
+        contentCards.add(dashboardPanel, "DASHBOARD");
+        contentCards.add(employeePanel, "EMPLOYEE");
+        contentCards.add(payrollPanel, "PAYROLL");
+        contentCards.add(leaveApprovalPanel, "LEAVE_APPROVAL");
 
         // Employee portal screens
-        contentCards.add(new EmployeeDashboardPanel(), "EMPLOYEE_DASHBOARD");
-        contentCards.add(new MyPayslipPanel(), "MY_PAYSLIP");
-        contentCards.add(new LeaveRequestPanel(), "LEAVE_REQUEST");
+        contentCards.add(employeeDashboardPanel, "EMPLOYEE_DASHBOARD");
+        contentCards.add(myPayslipPanel, "MY_PAYSLIP");
+        contentCards.add(leaveRequestPanel, "LEAVE_REQUEST");
 
         appShell.add(contentCards, BorderLayout.CENTER);
         return appShell;
@@ -69,7 +89,7 @@ public class MainFrame extends JFrame {
     }
 
     /**
-     * Rebuilds the left sidebar depending on role (Employee vs Admin/HR).
+     * Rebuilds the left sidebar depending on role.
      */
     private void buildMainAppUI() {
         Component oldWest = ((BorderLayout) appShell.getLayout())
@@ -86,7 +106,8 @@ public class MainFrame extends JFrame {
 
     /**
      * Switches the right-side screen (content area).
-     *  Polymorphism-based access control
+     * ✅ Polymorphism-based access control
+     * ✅ Auto-refreshes dashboards and key employee/admin pages
      */
     public void showContent(String screen) {
         User u = Session.getCurrentUser();
@@ -96,11 +117,33 @@ public class MainFrame extends JFrame {
             return;
         }
 
-        //  Polymorphism: role rules are inside AccessPolicy classes
+        // Access control
         if (!u.getAccessPolicy().canOpenScreen(screen)) {
-            screen = u.isEmployee()
-                    ? "EMPLOYEE_DASHBOARD"
-                    : "DASHBOARD";
+            screen = u.isEmployee() ? "EMPLOYEE_DASHBOARD" : "DASHBOARD";
+        }
+
+        // ✅ Admin dashboard auto refresh
+        if ("DASHBOARD".equals(screen) && dashboardPanel != null) {
+            dashboardPanel.refreshData();
+        }
+
+        // ✅ Employee dashboard auto refresh
+        if ("EMPLOYEE_DASHBOARD".equals(screen) && employeeDashboardPanel != null) {
+            employeeDashboardPanel.refreshData();
+        }
+
+        // ✅ Employee pages auto refresh
+        if ("MY_PAYSLIP".equals(screen) && myPayslipPanel != null) {
+            myPayslipPanel.refreshData();
+        }
+
+        if ("LEAVE_REQUEST".equals(screen) && leaveRequestPanel != null) {
+            leaveRequestPanel.refreshData();
+        }
+
+        // ✅ Admin/HR leave approval auto refresh
+        if ("LEAVE_APPROVAL".equals(screen) && leaveApprovalPanel != null) {
+            leaveApprovalPanel.refreshData();
         }
 
         contentLayout.show(contentCards, screen);

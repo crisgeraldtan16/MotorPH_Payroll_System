@@ -25,7 +25,7 @@ public class LeaveApprovalPanel extends JPanel {
     // Full reason viewer
     private JTextArea reasonViewer;
 
-    // Cache loaded requests (so we can show full reason on click)
+    // Cache loaded requests
     private List<LeaveRequest> cached;
 
     public LeaveApprovalPanel() {
@@ -36,7 +36,7 @@ public class LeaveApprovalPanel extends JPanel {
         add(header(), BorderLayout.NORTH);
         add(body(), BorderLayout.CENTER);
 
-        refresh();
+        refreshData();
     }
 
     private JComponent header() {
@@ -63,7 +63,7 @@ public class LeaveApprovalPanel extends JPanel {
 
         JButton refreshBtn = new JButton("Refresh");
         refreshBtn.setFocusPainted(false);
-        refreshBtn.addActionListener(e -> refresh());
+        refreshBtn.addActionListener(e -> refreshData());
 
         JButton approveBtn = new JButton("Approve");
         approveBtn.setFocusPainted(false);
@@ -83,12 +83,10 @@ public class LeaveApprovalPanel extends JPanel {
     }
 
     private JComponent body() {
-        // Split layout: Table (top) + Full reason (bottom)
         JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
         split.setResizeWeight(0.72);
         split.setBorder(null);
 
-        // ---- Table card ----
         JPanel tableCard = new JPanel(new BorderLayout(10, 10));
         tableCard.setBackground(CARD_BG);
         tableCard.setBorder(BorderFactory.createCompoundBorder(
@@ -112,12 +110,10 @@ public class LeaveApprovalPanel extends JPanel {
 
         tableCard.add(sp, BorderLayout.CENTER);
 
-        // When clicking/selecting a row, show full reason
         table.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) showSelectedReason();
         });
 
-        // ---- Reason card ----
         JPanel reasonCard = new JPanel(new BorderLayout(10, 10));
         reasonCard.setBackground(CARD_BG);
         reasonCard.setBorder(BorderFactory.createCompoundBorder(
@@ -160,7 +156,8 @@ public class LeaveApprovalPanel extends JPanel {
         return split;
     }
 
-    private void refresh() {
+    // ✅ PUBLIC METHOD so MainFrame can auto-refresh this panel
+    public void refreshData() {
         model.setRowCount(0);
 
         if (reasonViewer != null) {
@@ -250,15 +247,13 @@ public class LeaveApprovalPanel extends JPanel {
             return;
         }
 
-        LeaveRequest.Status oldStatus = target.getStatus();
-        if (oldStatus == newStatus) {
-            JOptionPane.showMessageDialog(this, "This request is already " + newStatus + ".", "Info", JOptionPane.INFORMATION_MESSAGE);
-            return;
-        }
+        int confirm = JOptionPane.showConfirmDialog(
+                this,
+                "Change status to " + newStatus + " for " + target.getEmployeeName() + "?",
+                "Confirm",
+                JOptionPane.YES_NO_OPTION
+        );
 
-        // ✅ Allow changing mind: PENDING -> APPROVED/DENIED, or APPROVED <-> DENIED
-        String msg = "Change status from " + oldStatus + " to " + newStatus + " for " + target.getEmployeeName() + "?";
-        int confirm = JOptionPane.showConfirmDialog(this, msg, "Confirm", JOptionPane.YES_NO_OPTION);
         if (confirm != JOptionPane.YES_OPTION) return;
 
         target.setStatus(newStatus);
@@ -266,7 +261,7 @@ public class LeaveApprovalPanel extends JPanel {
         target.setReviewedAt(LeaveIOUtil.now());
 
         LeaveIOUtil.overwriteAll(all);
-        refresh();
+        refreshData();
     }
 
     private String shorten(String s, int max) {

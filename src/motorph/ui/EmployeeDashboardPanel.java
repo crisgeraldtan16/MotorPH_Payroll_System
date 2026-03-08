@@ -468,4 +468,8 @@ public class EmployeeDashboardPanel extends JPanel {
             ((MainFrame) window).showContent(screenName);
         }
     }
+
+    public void refreshData() {
+        refresh();
+    }
 }
