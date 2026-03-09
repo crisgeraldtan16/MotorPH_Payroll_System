@@ -67,6 +67,8 @@ Expected Result:
 Note:
 The available attendance data used for payroll computation covers **June 2024 to December 2024**. Payroll computation should be tested within this date range.
 
+After the payroll is computed, go to the **Compute tab** and click **"Save Record"**. This will save the payroll record to the **payroll_records.csv** file so that the employee payslip can be generated and viewed later in the employee's **"My Payslip"** tab.
+
 Expected Result:
 - Payroll will compute using attendance records.
 - Gross pay, deductions, and net pay will be displayed.
@@ -76,11 +78,12 @@ Important rule: If **no attendance exists for the selected employee and month**,
 -------
 ## Batch Payroll Computation
 1. Select a payroll month.
-2. Click Compute All Employees.
+2. Click "Compute All Employees (Monthly).
+3. Click the **"Monthly Summary"** tab to view the payroll summary for all employees.
 
 Expected Result:
 
-The system computes payroll for all employees with attendance records.
+The system computes payroll for all employees who have attendance records for the selected month. The **Monthly Summary** tab will display the total payroll details including employee net pay, deductions, and taxes for the selected period.
 
 -------
 ## Leave Approval
