@@ -64,6 +64,9 @@ Expected Result:
 3. Select a payroll month.
 4. Click "Compute Employee Selected".
 
+Note:
+The available attendance data used for payroll computation covers **June 2024 to December 2024**. Payroll computation should be tested within this date range.
+
 Expected Result:
 - Payroll will compute using attendance records.
 - Gross pay, deductions, and net pay will be displayed.
