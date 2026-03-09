@@ -71,7 +71,7 @@ Expected Result:
 - Payroll will compute using attendance records.
 - Gross pay, deductions, and net pay will be displayed.
 
-Important rule: If no attendance exists for the selected month, payroll will not compute.
+Important rule: If **no attendance exists for the selected employee and month**, payroll computation will **not proceed** and no payroll record will be generated.
 
 -------
 ## Batch Payroll Computation
