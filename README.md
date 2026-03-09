@@ -62,12 +62,14 @@ Expected Result:
 1. Navigate to the Payroll Panel.
 2. Select an employee.
 3. Select a payroll month.
-4. Click Compute Payroll.
+4. Click "Compute Employee Selected".
 
 Expected Result:
 - Payroll will compute using attendance records.
 - Gross pay, deductions, and net pay will be displayed.
-- Important rule: If no attendance exists for the selected month, payroll will not compute.
+
+Important rule: If no attendance exists for the selected month, payroll will not compute.
+
 -------
 ## Batch Payroll Computation
 1. Select a payroll month.
