@@ -2,13 +2,12 @@ package motorph.ui;
 
 import motorph.model.AttendanceRecord;
 import motorph.model.Employee;
-import motorph.model.LeaveRequest;
 import motorph.model.PayrollRecord;
 import motorph.model.User;
 import motorph.service.AttendanceService;
-import motorph.util.CSVUtil;
-import motorph.util.LeaveIOUtil;
-import motorph.util.PayrollIOUtil;
+import motorph.service.EmployeeService;
+import motorph.service.LeaveService;
+import motorph.service.PayrollAppService;
 import motorph.util.Session;
 
 import javax.swing.*;
@@ -17,7 +16,6 @@ import java.awt.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 
 public class EmployeeDashboardPanel extends JPanel {
 
@@ -44,6 +42,9 @@ public class EmployeeDashboardPanel extends JPanel {
     private JButton timeInBtn, timeOutBtn;
 
     private final AttendanceService attendanceService = new AttendanceService();
+    private final EmployeeService employeeService = new EmployeeService();
+    private final LeaveService leaveService = new LeaveService();
+    private final PayrollAppService payrollAppService = new PayrollAppService();
 
     public EmployeeDashboardPanel() {
         setLayout(new BorderLayout(14, 14));
@@ -353,7 +354,7 @@ public class EmployeeDashboardPanel extends JPanel {
         }
 
         String empNo = u.getEmployeeNumber();
-        Employee emp = CSVUtil.findEmployeeByNumber(empNo);
+        Employee emp = employeeService.getEmployeeByNumber(empNo);
         if (emp == null) {
             throw new IllegalStateException("Employee profile not found.");
         }
@@ -389,7 +390,7 @@ public class EmployeeDashboardPanel extends JPanel {
         }
 
         String empNo = u.getEmployeeNumber();
-        Employee emp = CSVUtil.findEmployeeByNumber(empNo);
+        Employee emp = employeeService.getEmployeeByNumber(empNo);
 
         if (emp != null) {
             empNoVal.setText(emp.getEmployeeNumber());
@@ -404,17 +405,15 @@ public class EmployeeDashboardPanel extends JPanel {
         }
 
         int pending = 0, approved = 0, denied = 0;
-        List<LeaveRequest> leaves = LeaveIOUtil.loadForEmployee(empNo);
-        for (LeaveRequest r : leaves) {
-            if (r.getStatus() == LeaveRequest.Status.PENDING) pending++;
-            if (r.getStatus() == LeaveRequest.Status.APPROVED) approved++;
-            if (r.getStatus() == LeaveRequest.Status.DENIED) denied++;
-        }
+        LeaveService.LeaveSummary leaveSummary = leaveService.summarizeForEmployee(empNo);
+        pending = leaveSummary.pending;
+        approved = leaveSummary.approved;
+        denied = leaveSummary.denied;
         pendingVal.setText(String.valueOf(pending));
         approvedVal.setText(String.valueOf(approved));
         deniedVal.setText(String.valueOf(denied));
 
-        PayrollRecord latest = PayrollIOUtil.findLatestForEmployee(empNo);
+        PayrollRecord latest = payrollAppService.findLatestForEmployee(empNo);
         if (latest == null) {
             payrollMonthVal.setText("No records");
             grossVal.setText("-");

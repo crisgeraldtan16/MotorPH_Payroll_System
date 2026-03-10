@@ -1,7 +1,7 @@
 package motorph.ui;
 
 import motorph.model.User;
-import motorph.util.CSVUtil;
+import motorph.service.UserService;
 import motorph.util.Session;
 
 import javax.swing.*;
@@ -9,11 +9,11 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.util.List;
 
 public class LoginPanel extends JPanel {
 
     private final MainFrame mainFrame;
+    private final UserService userService = new UserService();
 
     private JTextField usernameField;
     private JPasswordField passwordField;
@@ -171,42 +171,38 @@ public class LoginPanel extends JPanel {
             return;
         }
 
-        List<User> users = CSVUtil.loadUsers();
+        User user = userService.authenticate(username, password);
 
-        for (User user : users) {
-            if (user.getUsername().equals(username)
-                    && user.getPassword().equals(password)) {
-
-                /*
-                 * This makes sure employee accounts
-                 * are properly linked to an employee number.
-                 */
-                if (user.isEmployee() && (user.getEmployeeNumber() == null || user.getEmployeeNumber().isBlank())) {
-                    JOptionPane.showMessageDialog(
-                            this,
-                            "This EMPLOYEE account has no Employee # linked.\nPlease update users.csv.",
-                            "Login Blocked",
-                            JOptionPane.ERROR_MESSAGE
-                    );
-                    return;
-                }
-
-                // The logged-in user is saved in session for access control
-                Session.setCurrentUser(user);
-
-                usernameField.setText("");
-                passwordField.setText("");
-
-                mainFrame.showMainApp();
-                return;
-            }
+        if (user == null) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Invalid username or password.",
+                    "Login Failed",
+                    JOptionPane.ERROR_MESSAGE
+            );
+            return;
         }
 
-        JOptionPane.showMessageDialog(
-                this,
-                "Invalid username or password.",
-                "Login Failed",
-                JOptionPane.ERROR_MESSAGE
-        );
+        /*
+         * This makes sure employee accounts
+         * are properly linked to an employee number.
+         */
+        if (user.isEmployee() && (user.getEmployeeNumber() == null || user.getEmployeeNumber().isBlank())) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "This EMPLOYEE account has no Employee # linked.\nPlease update users.csv.",
+                    "Login Blocked",
+                    JOptionPane.ERROR_MESSAGE
+            );
+            return;
+        }
+
+        // The logged-in user is saved in session for access control
+        Session.setCurrentUser(user);
+
+        usernameField.setText("");
+        passwordField.setText("");
+
+        mainFrame.showMainApp();
     }
 }

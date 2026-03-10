@@ -4,11 +4,9 @@ import motorph.model.AttendanceEntry;
 import motorph.model.AttendanceRecord;
 import motorph.model.Employee;
 import motorph.model.PayrollRecord;
-import motorph.util.AttendanceUtil;
-import motorph.util.CSVUtil;
-import motorph.util.DefaultPayrollService;
-import motorph.util.PayrollService;
-import motorph.util.PayrollIOUtil;
+import motorph.service.AttendanceService;
+import motorph.service.EmployeeService;
+import motorph.service.PayrollAppService;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -45,10 +43,12 @@ public class PayrollPanel extends JPanel {
     private List<Employee> employees;
 
     /*
-     * This service handles payroll computation.
-     * The panel only calls the service instead of computing directly.
+     * These services handle payroll computation, attendance, and employee data.
+     * The panel only calls the services instead of computing directly.
      */
-    private final PayrollService payrollService = new DefaultPayrollService();
+    private final PayrollAppService payrollAppService = new PayrollAppService();
+    private final AttendanceService attendanceService = new AttendanceService();
+    private final EmployeeService employeeService = new EmployeeService();
 
     // Left selection
     private JTable employeeTable;
@@ -115,7 +115,7 @@ public class PayrollPanel extends JPanel {
         setBackground(BG);
         setBorder(new EmptyBorder(18, 18, 18, 18));
 
-        employees = CSVUtil.loadEmployees();
+        employees = employeeService.getAllEmployees();
 
         add(buildHeader(), BorderLayout.NORTH);
         add(buildBody(), BorderLayout.CENTER);
@@ -336,7 +336,7 @@ public class PayrollPanel extends JPanel {
     }
 
     private void refreshEmployees() {
-        employees = CSVUtil.loadEmployees();
+        employees = employeeService.getAllEmployees();
         refreshEmployeeTable();
         JOptionPane.showMessageDialog(this, "Employee list refreshed.", "Info", JOptionPane.INFORMATION_MESSAGE);
     }
@@ -873,7 +873,7 @@ public class PayrollPanel extends JPanel {
         if (confirm != JOptionPane.YES_OPTION) return;
 
         try {
-            AttendanceUtil.deleteRecord(key);
+            attendanceService.deleteRecord(key);
             refreshTimecard(emp.getEmployeeNumber(), getSelectedMonth());
             JOptionPane.showMessageDialog(this, "Timecard record deleted.", "Deleted", JOptionPane.INFORMATION_MESSAGE);
         } catch (Exception ex) {
@@ -936,14 +936,14 @@ public class PayrollPanel extends JPanel {
 
         try {
             if (tcMode == TcMode.ADD) {
-                AttendanceUtil.addRecord(record);
+                attendanceService.addRecord(record);
                 JOptionPane.showMessageDialog(this, "Timecard record added.", "Saved", JOptionPane.INFORMATION_MESSAGE);
             } else {
                 if (selectedRecordKey == null) {
                     JOptionPane.showMessageDialog(this, "Cannot edit: missing original record key.", "Error", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
-                AttendanceUtil.updateRecord(selectedRecordKey, record);
+                attendanceService.updateRecord(selectedRecordKey, record);
                 JOptionPane.showMessageDialog(this, "Timecard record updated.", "Saved", JOptionPane.INFORMATION_MESSAGE);
             }
 
@@ -982,7 +982,7 @@ public class PayrollPanel extends JPanel {
      * then updates the totals shown below the table.
      */
     private void refreshTimecard(String employeeNo, YearMonth ym) {
-        List<AttendanceEntry> entries = AttendanceUtil.loadEntriesForEmployeeMonth(employeeNo, ym);
+        List<AttendanceEntry> entries = attendanceService.getEntriesForEmployeeMonth(employeeNo, ym);
 
         timecardTableModel.setRowCount(0);
 
@@ -990,8 +990,8 @@ public class PayrollPanel extends JPanel {
         long totalLate = 0;
 
         for (AttendanceEntry e : entries) {
-            long late = AttendanceUtil.computeLateMinutesWithGrace(e.getTimeIn(), 10);
-            double hours = AttendanceUtil.computeWorkedHours(e.getTimeIn(), e.getTimeOut());
+            long late = attendanceService.computeLateMinutesWithGrace(e.getTimeIn(), 10);
+            double hours = attendanceService.computeWorkedHours(e.getTimeIn(), e.getTimeOut());
 
             totalLate += late;
             totalHours += hours;
@@ -1030,7 +1030,7 @@ public class PayrollPanel extends JPanel {
 
         YearMonth ym = getSelectedMonth();
 
-        PayrollRecord pr = payrollService.computeForEmployeeMonth(emp, ym);
+        PayrollRecord pr = payrollAppService.computeForEmployeeMonth(emp, ym);
 
         if (pr == null) {
             lastRecord = null;
@@ -1091,7 +1091,7 @@ public class PayrollPanel extends JPanel {
         int computedCount = 0;
 
         for (Employee emp : employees) {
-            PayrollRecord pr = payrollService.computeForEmployeeMonth(emp, ym);
+            PayrollRecord pr = payrollAppService.computeForEmployeeMonth(emp, ym);
             if (pr == null) continue;
 
             computedCount++;
@@ -1134,7 +1134,7 @@ public class PayrollPanel extends JPanel {
         }
 
         try {
-            PayrollIOUtil.appendPayrollRecord(lastRecord);
+            payrollAppService.saveRecord(lastRecord);
 
             JOptionPane.showMessageDialog(this,
                     "Payroll record saved to: data/payroll_records.csv",

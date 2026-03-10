@@ -2,9 +2,9 @@ package motorph.ui;
 
 import motorph.model.Employee;
 import motorph.model.User;
-import motorph.util.CSVUtil;
+import motorph.service.EmployeeService;
+import motorph.service.UserService;
 import motorph.util.Session;
-import motorph.util.UserIOUtil;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -28,6 +28,9 @@ public class UserAccountsPanel extends JPanel {
 
     // This stores the loaded employee list for account creation
     private List<Employee> employees;
+
+    private final EmployeeService employeeService = new EmployeeService();
+    private final UserService userService = new UserService();
 
     public UserAccountsPanel() {
         setLayout(new BorderLayout(14, 14));
@@ -159,7 +162,7 @@ public class UserAccountsPanel extends JPanel {
         User current = Session.getCurrentUser();
         if (current == null || !current.isIt()) return;
 
-        employees = CSVUtil.loadEmployees();
+        employees = employeeService.getAllEmployees();
 
         employeeCombo.removeAllItems();
         for (Employee e : employees) {
@@ -214,7 +217,7 @@ public class UserAccountsPanel extends JPanel {
             return;
         }
 
-        if (UserIOUtil.usernameExists(username)) {
+        if (userService.usernameExists(username)) {
             JOptionPane.showMessageDialog(this, "Username already exists. Please use a different username.", "Duplicate Username", JOptionPane.ERROR_MESSAGE);
             return;
         }
@@ -228,7 +231,7 @@ public class UserAccountsPanel extends JPanel {
         }
 
         User newUser = new User(username, password, role, emp.getEmployeeNumber());
-        UserIOUtil.appendUser(newUser);
+        userService.createUser(newUser);
 
         JOptionPane.showMessageDialog(this,
                 "Login credentials created for " + emp.getFullName() + ".",

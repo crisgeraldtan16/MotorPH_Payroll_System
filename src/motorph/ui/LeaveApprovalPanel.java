@@ -2,7 +2,7 @@ package motorph.ui;
 
 import motorph.model.LeaveRequest;
 import motorph.model.User;
-import motorph.util.LeaveIOUtil;
+import motorph.service.LeaveService;
 import motorph.util.Session;
 
 import javax.swing.*;
@@ -28,6 +28,8 @@ public class LeaveApprovalPanel extends JPanel {
 
     // This stores the currently loaded leave requests
     private List<LeaveRequest> cached;
+
+    private final LeaveService leaveService = new LeaveService();
 
     public LeaveApprovalPanel() {
         setLayout(new BorderLayout(14, 14));
@@ -180,7 +182,7 @@ public class LeaveApprovalPanel extends JPanel {
         User u = Session.getCurrentUser();
         if (u == null || !(u.isAdmin() || u.isHr())) return;
 
-        cached = LeaveIOUtil.loadAll();
+        cached = leaveService.getAllRequests();
 
         for (LeaveRequest r : cached) {
             model.addRow(new Object[]{
@@ -252,7 +254,7 @@ public class LeaveApprovalPanel extends JPanel {
 
         String requestId = String.valueOf(model.getValueAt(row, 0));
 
-        List<LeaveRequest> all = LeaveIOUtil.loadAll();
+        List<LeaveRequest> all = leaveService.getAllRequests();
         LeaveRequest target = null;
         for (LeaveRequest r : all) {
             if (requestId.equals(r.getRequestId())) {
@@ -277,9 +279,9 @@ public class LeaveApprovalPanel extends JPanel {
 
         target.setStatus(newStatus);
         target.setReviewedBy(u.getUsername());
-        target.setReviewedAt(LeaveIOUtil.now());
+        target.setReviewedAt(leaveService.now());
 
-        LeaveIOUtil.overwriteAll(all);
+        leaveService.saveAllRequests(all);
         refreshData();
     }
 

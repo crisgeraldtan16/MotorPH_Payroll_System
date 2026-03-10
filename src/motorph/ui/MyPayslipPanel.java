@@ -2,7 +2,7 @@ package motorph.ui;
 
 import motorph.model.PayrollRecord;
 import motorph.model.User;
-import motorph.util.PayrollIOUtil;
+import motorph.service.PayrollAppService;
 import motorph.util.Session;
 
 import javax.swing.*;
@@ -26,6 +26,8 @@ public class MyPayslipPanel extends JPanel {
 
     private DefaultTableModel model;
     private JTextArea payslipArea;
+
+    private final PayrollAppService payrollAppService = new PayrollAppService();
 
     public MyPayslipPanel() {
         setLayout(new BorderLayout(14, 14));
@@ -180,7 +182,7 @@ public class MyPayslipPanel extends JPanel {
         if (u == null || !u.isEmployee()) return;
 
         YearMonth ym = getSelectedMonth();
-        List<PayrollRecord> list = PayrollIOUtil.loadPayrollRecordsForEmployeeMonth(u.getEmployeeNumber(), ym);
+        List<PayrollRecord> list = payrollAppService.getPayrollRecordsForEmployeeMonth(u.getEmployeeNumber(), ym);
 
         for (PayrollRecord pr : list) {
             model.addRow(new Object[]{
@@ -212,7 +214,7 @@ public class MyPayslipPanel extends JPanel {
         }
 
         YearMonth ym = getSelectedMonth();
-        List<PayrollRecord> list = PayrollIOUtil.loadPayrollRecordsForEmployeeMonth(u.getEmployeeNumber(), ym);
+        List<PayrollRecord> list = payrollAppService.getPayrollRecordsForEmployeeMonth(u.getEmployeeNumber(), ym);
         if (list.isEmpty()) {
             payslipArea.setText("No payroll record found for " + ym + ".\n");
             return;
@@ -220,7 +222,7 @@ public class MyPayslipPanel extends JPanel {
 
         // One payroll record is expected per employee per month
         PayrollRecord pr = list.get(0);
-        payslipArea.setText(PayrollIOUtil.formatPayslipText(pr));
+        payslipArea.setText(payrollAppService.formatPayslipText(pr));
         payslipArea.setCaretPosition(0);
     }
 
