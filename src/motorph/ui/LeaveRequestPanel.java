@@ -3,8 +3,8 @@ package motorph.ui;
 import motorph.model.Employee;
 import motorph.model.LeaveRequest;
 import motorph.model.User;
-import motorph.util.CSVUtil;
-import motorph.util.LeaveIOUtil;
+import motorph.service.EmployeeService;
+import motorph.service.LeaveService;
 import motorph.util.Session;
 
 import javax.swing.*;
@@ -26,6 +26,9 @@ public class LeaveRequestPanel extends JPanel {
     private static final Color MUTED = new Color(110, 120, 140);
 
     private final DateTimeFormatter DF = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+    private final LeaveService leaveService = new LeaveService();
+    private final EmployeeService employeeService = new EmployeeService();
 
     // Date dropdowns for the leave start date
     private JComboBox<Integer> fromYear;
@@ -289,19 +292,19 @@ public class LeaveRequestPanel extends JPanel {
         String empName = (emp != null) ? emp.getFullName() : ("Employee " + empNo);
 
         LeaveRequest r = new LeaveRequest();
-        r.setRequestId(LeaveIOUtil.newRequestId());
+        r.setRequestId(leaveService.newRequestId());
         r.setEmployeeNumber(empNo);
         r.setEmployeeName(empName);
         r.setFromDate(from);
         r.setToDate(to);
         r.setReason(reason);
         r.setStatus(LeaveRequest.Status.PENDING);
-        r.setSubmittedAt(LeaveIOUtil.now());
+        r.setSubmittedAt(leaveService.now());
         r.setReviewedBy("");
         r.setReviewedAt("");
 
         try {
-            LeaveIOUtil.append(r);
+            leaveService.submitRequest(r);
             JOptionPane.showMessageDialog(this, "Leave request submitted.", "Submitted", JOptionPane.INFORMATION_MESSAGE);
 
             reasonArea.setText("");
@@ -321,7 +324,7 @@ public class LeaveRequestPanel extends JPanel {
         User u = Session.getCurrentUser();
         if (u == null || !u.isEmployee()) return;
 
-        List<LeaveRequest> list = LeaveIOUtil.loadForEmployee(u.getEmployeeNumber());
+        List<LeaveRequest> list = leaveService.getRequestsForEmployee(u.getEmployeeNumber());
         for (LeaveRequest r : list) {
             model.addRow(new Object[]{
                     r.getRequestId(),
@@ -335,11 +338,7 @@ public class LeaveRequestPanel extends JPanel {
     }
 
     private Employee findEmployee(String empNo) {
-        List<Employee> employees = CSVUtil.loadEmployees();
-        for (Employee e : employees) {
-            if (empNo.equals(e.getEmployeeNumber())) return e;
-        }
-        return null;
+        return employeeService.getEmployeeByNumber(empNo);
     }
 
     private JLabel label(String t) {

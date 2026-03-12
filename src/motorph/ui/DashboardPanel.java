@@ -1,7 +1,7 @@
 package motorph.ui;
 
 import motorph.model.Employee;
-import motorph.util.CSVUtil;
+import motorph.service.EmployeeService;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -24,6 +24,8 @@ public class DashboardPanel extends JPanel {
     private static final Color MUTED = new Color(110, 120, 140);
 
     private JLabel lastUpdatedVal;
+
+    private final EmployeeService employeeService = new EmployeeService();
 
     // Labels for dashboard summary values
     private JLabel totalVal, regularVal, probationaryVal, avgSalaryVal;
@@ -300,7 +302,7 @@ public class DashboardPanel extends JPanel {
 
     // This method refreshes all dashboard data and updates the UI
     private void refreshDashboard() {
-        List<Employee> employees = CSVUtil.loadEmployees();
+        List<Employee> employees = employeeService.getAllEmployees();
 
         int total = employees.size();
         int regular = 0;

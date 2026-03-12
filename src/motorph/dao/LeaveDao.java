@@ -25,4 +25,11 @@ public class LeaveDao {
     public void saveAll(List<LeaveRequest> requests) {
         LeaveIOUtil.overwriteAll(requests);
     }
+
+    /*
+     * This appends a single new leave request to the CSV file.
+     */
+    public void append(LeaveRequest r) {
+        LeaveIOUtil.append(r);
+    }
 }

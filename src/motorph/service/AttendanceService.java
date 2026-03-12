@@ -110,6 +110,43 @@ public class AttendanceService {
     }
 
     /*
+     * This adds a raw attendance record directly through the DAO.
+     * Used by the payroll timecard manager for manual entries.
+     */
+    public void addRecord(AttendanceRecord record) {
+        attendanceDao.add(record);
+    }
+
+    /*
+     * This updates an existing attendance record through the DAO.
+     */
+    public void updateRecord(AttendanceRecord oldKey, AttendanceRecord updated) {
+        attendanceDao.update(oldKey, updated);
+    }
+
+    /*
+     * This deletes an attendance record through the DAO.
+     */
+    public void deleteRecord(AttendanceRecord key) {
+        attendanceDao.delete(key);
+    }
+
+    /*
+     * This computes the number of minutes an employee was late
+     * after the grace period is applied.
+     */
+    public long computeLateMinutesWithGrace(LocalTime timeIn, int graceMinutes) {
+        return AttendanceUtil.computeLateMinutesWithGrace(timeIn, graceMinutes);
+    }
+
+    /*
+     * This computes total worked hours based on log in and log out.
+     */
+    public double computeWorkedHours(LocalTime in, LocalTime out) {
+        return AttendanceUtil.computeWorkedHours(in, out);
+    }
+
+    /*
      * This helper method returns the current time without seconds and nanoseconds.
      * This keeps the recorded time cleaner and more consistent.
      */

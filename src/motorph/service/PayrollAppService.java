@@ -4,6 +4,7 @@ import motorph.dao.PayrollDao;
 import motorph.model.Employee;
 import motorph.model.PayrollRecord;
 import motorph.util.DefaultPayrollService;
+import motorph.util.PayrollIOUtil;
 import motorph.util.PayrollService;
 
 import java.time.YearMonth;
@@ -43,5 +44,13 @@ public class PayrollAppService {
 
     public PayrollRecord findLatestForEmployee(String empNo) {
         return payrollDao.findLatestForEmployee(empNo);
+    }
+
+    public List<PayrollRecord> getPayrollRecordsForEmployeeMonth(String empNo, YearMonth ym) {
+        return payrollDao.findForEmployeeMonth(empNo, ym);
+    }
+
+    public String formatPayslipText(PayrollRecord pr) {
+        return PayrollIOUtil.formatPayslipText(pr);
     }
 }

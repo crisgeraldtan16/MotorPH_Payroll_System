@@ -1,7 +1,7 @@
 package motorph.ui;
 
 import motorph.model.Employee;
-import motorph.util.CSVUtil;
+import motorph.service.EmployeeService;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -34,6 +34,8 @@ public class EmployeePanel extends JPanel {
 
     // This list stores all employee records loaded from the CSV file.
     private List<Employee> employees;
+
+    private final EmployeeService employeeService = new EmployeeService();
 
     private DefaultTableModel tableModel;
     private JTable employeeTable;
@@ -72,7 +74,7 @@ public class EmployeePanel extends JPanel {
         viewPanel.setOpaque(true);
         viewPanel.setBackground(BG);
 
-        employees = CSVUtil.loadEmployees();
+        employees = employeeService.getAllEmployees();
 
         viewPanel.add(buildListView(), "LIST");
         viewPanel.add(buildFormView(), "FORM");
@@ -495,7 +497,7 @@ public class EmployeePanel extends JPanel {
     }
 
     private void showListView() {
-        employees = CSVUtil.loadEmployees();
+        employees = employeeService.getAllEmployees();
         refreshTable();
         viewLayout.show(viewPanel, "LIST");
         clearForm();
@@ -511,7 +513,7 @@ public class EmployeePanel extends JPanel {
         formTitle.setText("Add New Employee");
         clearForm();
 
-        String nextId = CSVUtil.generateNextEmployeeNumber(employees);
+        String nextId = employeeService.generateNextEmployeeNumber(employees);
         empNoField.setText(nextId);
 
         setFormEditable(true);
@@ -573,7 +575,7 @@ public class EmployeePanel extends JPanel {
 
         if (confirm == JOptionPane.YES_OPTION) {
             employees.remove(e);
-            CSVUtil.saveEmployees(employees);
+            employeeService.saveEmployees(employees);
             refreshTable();
         }
     }
@@ -630,7 +632,7 @@ public class EmployeePanel extends JPanel {
             return;
         }
 
-        CSVUtil.saveEmployees(employees);
+        employeeService.saveEmployees(employees);
         showListView();
     }
 

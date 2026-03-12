@@ -2,7 +2,7 @@ package motorph.ui;
 
 import motorph.model.Employee;
 import motorph.model.User;
-import motorph.util.CSVUtil;
+import motorph.service.EmployeeService;
 import motorph.util.Session;
 
 import javax.swing.*;
@@ -35,6 +35,8 @@ public class SideMenuPanel extends JPanel {
     private JButton requestLeaveBtn;
 
     private JButton logoutBtn;
+
+    private final EmployeeService employeeService = new EmployeeService();
 
     public SideMenuPanel(MainFrame mainFrame) {
         setLayout(new BorderLayout());
@@ -96,7 +98,7 @@ public class SideMenuPanel extends JPanel {
             roleTxt = formatRole(u.getRole().name());
 
             if (u.isEmployee()) {
-                Employee emp = CSVUtil.findEmployeeByNumber(u.getEmployeeNumber());
+                Employee emp = employeeService.getEmployeeByNumber(u.getEmployeeNumber());
                 if (emp != null) {
                     displayName = emp.getFullName();
                 } else {

@@ -2,6 +2,7 @@ package motorph.service;
 
 import motorph.dao.EmployeeDao;
 import motorph.model.Employee;
+import motorph.util.CSVUtil;
 
 import java.util.List;
 
@@ -34,5 +35,13 @@ public class EmployeeService {
 
     public void saveEmployees(List<Employee> employees) {
         employeeDao.saveAll(employees);
+    }
+
+    /*
+     * This generates the next available employee number
+     * by finding the current maximum and incrementing by 1.
+     */
+    public String generateNextEmployeeNumber(List<Employee> employees) {
+        return CSVUtil.generateNextEmployeeNumber(employees);
     }
 }
